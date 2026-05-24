@@ -1,0 +1,155 @@
+<?xml version="1.0"?>
+<!--
+  Obstacle World — MiniLab 1
+  12 m x 6 m walled arena.
+  Robot spawns at (1.0, 3.0) facing +x.
+  Goal: cyan cylinder at (10.0, 3.0). Spawn and goal share y, but both are
+  3 m from any wall, so wall-following alone never reaches the goal region.
+
+  Obstacles:
+    1. Brown box at (3.5, 3.0), 0.6 x 1.0 x 0.5  — directly on the
+       straight line from spawn to goal. A constant-velocity Twist collides.
+    2. Brown cylinder (north) at (5.5, 3.7), r=0.3 h=0.5
+       — close to obstacle 1 (centre-to-centre ~2.12 m).
+    3. Brown cylinder (south) at (7.5, 2.3), r=0.3 h=0.5
+       — farther from obstacle 1 (centre-to-centre ~4.06 m).
+  Asymmetric spacing: detour north of B1 meets C2 quickly; south detour
+  has more breathing room before C3.
+
+  Launch parameters: goal_x=10.0  goal_y=3.0
+-->
+<sdf version="1.9">
+  <world name="obstacle_world">
+
+    <physics name="default" type="ignored">
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+    </physics>
+    <plugin filename="gz-sim-physics-system"
+            name="gz::sim::systems::Physics"/>
+    <plugin filename="gz-sim-user-commands-system"
+            name="gz::sim::systems::UserCommands"/>
+    <plugin filename="gz-sim-scene-broadcaster-system"
+            name="gz::sim::systems::SceneBroadcaster"/>
+    <plugin filename="gz-sim-sensors-system"
+            name="gz::sim::systems::Sensors">
+      <render_engine>ogre2</render_engine>
+    </plugin>
+
+    <light name="sun" type="directional">
+      <cast_shadows>true</cast_shadows>
+      <pose>0 0 10 0 0 0</pose>
+      <diffuse>0.8 0.8 0.8 1</diffuse>
+      <specular>0.2 0.2 0.2 1</specular>
+      <direction>-0.5 0.1 -0.9</direction>
+    </light>
+
+    <model name="ground_plane">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry><plane><normal>0 0 1</normal><size>100 100</size></plane></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><plane><normal>0 0 1</normal><size>100 100</size></plane></geometry>
+          <material><ambient>0.8 0.8 0.8 1</ambient><diffuse>0.8 0.8 0.8 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Walls: 12 m x 6 m arena -->
+    <model name="wall_south">
+      <static>true</static>
+      <pose>6.0 0.05 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>12.0 0.1 1.0</size></box></geometry></collision>
+        <visual name="vis">
+          <geometry><box><size>12.0 0.1 1.0</size></box></geometry>
+          <material><ambient>0.6 0.6 0.6 1</ambient><diffuse>0.6 0.6 0.6 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="wall_north">
+      <static>true</static>
+      <pose>6.0 5.95 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>12.0 0.1 1.0</size></box></geometry></collision>
+        <visual name="vis">
+          <geometry><box><size>12.0 0.1 1.0</size></box></geometry>
+          <material><ambient>0.6 0.6 0.6 1</ambient><diffuse>0.6 0.6 0.6 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="wall_west">
+      <static>true</static>
+      <pose>0.05 3.0 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>0.1 6.0 1.0</size></box></geometry></collision>
+        <visual name="vis">
+          <geometry><box><size>0.1 6.0 1.0</size></box></geometry>
+          <material><ambient>0.6 0.6 0.6 1</ambient><diffuse>0.6 0.6 0.6 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="wall_east">
+      <static>true</static>
+      <pose>11.95 3.0 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>0.1 6.0 1.0</size></box></geometry></collision>
+        <visual name="vis">
+          <geometry><box><size>0.1 6.0 1.0</size></box></geometry>
+          <material><ambient>0.6 0.6 0.6 1</ambient><diffuse>0.6 0.6 0.6 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Obstacle 1: central block on the direct path -->
+    <model name="obstacle_1">
+      <static>true</static>
+      <pose>3.5 3.0 0.25 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>0.6 1.0 0.5</size></box></geometry></collision>
+        <visual name="vis">
+          <geometry><box><size>0.6 1.0 0.5</size></box></geometry>
+          <material><ambient>0.5 0.3 0.1 1</ambient><diffuse>0.5 0.3 0.1 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Obstacle 2: north cylinder, close to obstacle 1 -->
+    <model name="obstacle_2">
+      <static>true</static>
+      <pose>5.5 3.7 0.25 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><cylinder><radius>0.3</radius><length>0.5</length></cylinder></geometry></collision>
+        <visual name="vis">
+          <geometry><cylinder><radius>0.3</radius><length>0.5</length></cylinder></geometry>
+          <material><ambient>0.5 0.3 0.1 1</ambient><diffuse>0.5 0.3 0.1 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Obstacle 3: south cylinder, farther from obstacle 1 -->
+    <model name="obstacle_3">
+      <static>true</static>
+      <pose>7.5 2.3 0.25 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><cylinder><radius>0.3</radius><length>0.5</length></cylinder></geometry></collision>
+        <visual name="vis">
+          <geometry><cylinder><radius>0.3</radius><length>0.5</length></cylinder></geometry>
+          <material><ambient>0.5 0.3 0.1 1</ambient><diffuse>0.5 0.3 0.1 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Goal (10.0, 3.0): no Gazebo model. The goal_checker_node owns the
+         goal coordinate (via launch-time goal_x/goal_y params) and publishes
+         a cyan cylinder Marker on /goal_marker for RViz. Keeping the goal
+         out of the SDF means the LiDAR never raycasts against it. -->
+
+
+  </world>
+</sdf>
