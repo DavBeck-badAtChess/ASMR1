@@ -1,0 +1,164 @@
+<?xml version="1.0"?>
+<robot name="my_robot" xmlns:xacro="http://ros.org/wiki/xacro">
+
+  <xacro:include filename="$(find my_robot_description)/urdf/robot.gazebo"/>
+
+  <!-- ===== Materials ===== -->
+  <material name="blue">
+    <color rgba="0.2 0.4 0.8 1.0"/>
+  </material>
+  <material name="grey">
+    <color rgba="0.5 0.5 0.5 1.0"/>
+  </material>
+  <material name="green">
+    <color rgba="0.9 0.3 0.3 1.0"/>
+  </material>
+
+  <!-- ===== Chassis ===== -->
+  <!-- Box: 0.30 m (x) × 0.20 m (y) × 0.10 m (z), mass 5 kg             -->
+  <!-- Inertia: Ixx=m(y²+z²)/12  Iyy=m(x²+z²)/12  Izz=m(x²+y²)/12      -->
+  <link name="base_link">
+    <visual>
+      <geometry>
+        <box size="0.30 0.20 0.10"/>
+      </geometry>
+      <material name="blue"/>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.30 0.20 0.10"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="5.0"/>
+      <inertia ixx="0.02083" ixy="0.0" ixz="0.0"
+                              iyy="0.04167" iyz="0.0"
+                                            izz="0.05417"/>
+    </inertial>
+  </link>
+
+  <!-- ===== Left wheel ===== -->
+  <!-- Cylinder: r=0.05 m, l=0.03 m, mass 0.5 kg                         -->
+  <!-- Joint rotated -π/2 around X so cylinder axis (local Z) → world Y  -->
+  <!-- Inertia: Ixx=Iyy=m(3r²+l²)/12  Izz=mr²/2                         -->
+  <joint name="left_wheel_joint" type="continuous">
+    <parent link="base_link"/>
+    <child link="left_wheel_link"/>
+    <origin xyz="0.05 0.13 -0.05" rpy="-1.5708 0.0 0.0"/>
+    <axis xyz="0 0 1"/>
+    <dynamics damping="0.1" friction="0.1"/>
+  </joint>
+
+  <link name="left_wheel_link">
+    <visual>
+      <geometry>
+        <cylinder radius="0.05" length="0.03"/>
+      </geometry>
+      <material name="grey"/>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder radius="0.05" length="0.03"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.5"/>
+      <inertia ixx="0.00035" ixy="0.0" ixz="0.0"
+                              iyy="0.00035" iyz="0.0"
+                                            izz="0.000625"/>
+    </inertial>
+  </link>
+
+  <!-- ===== Right wheel ===== -->
+  <joint name="right_wheel_joint" type="continuous">
+    <parent link="base_link"/>
+    <child link="right_wheel_link"/>
+    <origin xyz="0.05 -0.13 -0.05" rpy="-1.5708 0.0 0.0"/>
+    <axis xyz="0 0 1"/>
+    <dynamics damping="0.1" friction="0.1"/>
+  </joint>
+
+  <link name="right_wheel_link">
+    <visual>
+      <geometry>
+        <cylinder radius="0.05" length="0.03"/>
+      </geometry>
+      <material name="grey"/>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder radius="0.05" length="0.03"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.5"/>
+      <inertia ixx="0.00035" ixy="0.0" ixz="0.0"
+                              iyy="0.00035" iyz="0.0"
+                                            izz="0.000625"/>
+    </inertial>
+  </link>
+
+  <!-- ===== Caster ===== -->
+  <!-- Sphere: r=0.025 m, mass 0.1 kg                                     -->
+  <!-- base_link is at body centre = 0.10 m above ground                  -->
+  <!-- caster centre at 0.025 m above ground → z = 0.025 - 0.10 = -0.075 -->
+  <!-- Inertia: I=2mr²/5                                                  -->
+  <joint name="caster_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="caster_link"/>
+    <origin xyz="-0.13 0.0 -0.075" rpy="0.0 0.0 0.0"/>
+  </joint>
+
+  <link name="caster_link">
+    <visual>
+      <geometry>
+        <sphere radius="0.025"/>
+      </geometry>
+      <material name="grey"/>
+    </visual>
+    <collision>
+      <geometry>
+        <sphere radius="0.025"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.1"/>
+      <inertia ixx="0.000025" ixy="0.0" ixz="0.0"
+                               iyy="0.000025" iyz="0.0"
+                                             izz="0.000025"/>
+    </inertial>
+  </link>
+
+  <!-- ===== LiDAR link ===== -->
+  <!-- Cylinder: r=0.05 m, l=0.04 m, mass 0.1 kg                           -->
+  <!-- Ixx=Iyy=m(3r²+l²)/12 ≈ 8.4e-5   Izz=mr²/2 = 1.25e-4               -->
+  <link name="lidar_link">
+    <visual>
+      <geometry>
+        <cylinder radius="0.05" length="0.04"/>
+      </geometry>
+      <material name="green"/>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder radius="0.05" length="0.04"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.1"/>
+      <inertia ixx="0.000076" ixy="0.0" ixz="0.0"
+                              iyy="0.000076" iyz="0.0"
+                                            izz="0.000125"/>
+    </inertial>
+  </link>
+
+  <!-- ===== LiDAR joint ===== -->
+  <!-- Sensor sits on top of chassis: base_link top face at z=+0.05,        -->
+  <!-- lidar cylinder half-height = 0.02 → joint at z=0.07                 -->
+  <joint name="lidar_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="lidar_link"/>
+    <origin xyz="0 0 0.07" rpy="0 0 0"/>
+  </joint>
+
+</robot>
