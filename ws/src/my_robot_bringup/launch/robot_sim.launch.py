@@ -31,6 +31,12 @@ def generate_launch_description():
             parameters=[{'robot_description': ParameterValue(Command(['xacro ', urdf_path]), value_type=str)}],
         ),
         
+        Node(
+            package='joint_state_publisher',
+            executable='joint_state_publisher',
+            name='joint_state_publisher'
+        ),
+        
         ExecuteProcess(
             cmd=['gz', 'sim', '-r', world_path],
         ),
