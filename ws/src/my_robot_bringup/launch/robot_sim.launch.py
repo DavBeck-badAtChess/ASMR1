@@ -53,7 +53,7 @@ def generate_launch_description():
 
         Node(# add the robot nav node 
             package='my_robot_nav',
-            executable='my_robot_nav',
+            executable='obstacle_nav',
             name='my_robot_nav',
             output='screen'
         ),

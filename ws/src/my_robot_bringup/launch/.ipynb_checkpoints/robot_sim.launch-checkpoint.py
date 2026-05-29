@@ -20,11 +20,14 @@ def generate_launch_description():
         [FindPackageShare('my_robot_bringup'), 'config', 'my_robot.rviz']
     )
 
+    nav_path = PathJoinSubstitution(
+        [FindPackageShare('my_robot_nav'), 'my_robot_nav', 'my_robot_nav.py']
+    )
+
     return LaunchDescription([
         Node(
             package='robot_state_publisher',
             executable='robot_state_publisher',
-            parameters=[{'robot_description': ParameterValue(Command(['xacro ', urdf_path]), value_type=str)}],
         ),
         ExecuteProcess(
             cmd=['gz', 'sim', '-r', world_path],
@@ -41,11 +44,17 @@ def generate_launch_description():
         Node(
             package='ros_gz_bridge',
             executable='parameter_bridge',
-            parameters=[{'config_file': bridge_config}],
         ),
         Node(
             package='rviz2',
             executable='rviz2',
             arguments=['-d', rviz_config],
+        ),
+
+        Node(# add the robot nav node 
+            package='my_robot_nav',
+            executable='obstacle_nav',
+            name='my_robot_nav',
+            output='screen'
         ),
     ])
