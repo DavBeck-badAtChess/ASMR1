@@ -1,3 +1,4 @@
 ws/build
 ws/log
 ws/install
+ws/src/my_robot_control/my_robot_control/__pycache__/
