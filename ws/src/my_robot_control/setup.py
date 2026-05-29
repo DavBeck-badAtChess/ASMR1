@@ -16,6 +16,7 @@ setup(
     entry_points={
         'console_scripts': [
             'move_square = my_robot_control.move_square:main',
+            'velocity_controller_node = my_robot_control.velocity_controller_node:main',
         ],
     },
 )
