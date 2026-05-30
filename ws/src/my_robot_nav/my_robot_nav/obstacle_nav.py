@@ -21,7 +21,7 @@
 import rclpy
 from rclpy.action import ActionClient
 from rclpy.node import Node
-from geometry_msgs import PointStamped
+from geometry_msgs.msg import PointStamped
 
 class ObstacleNav(Node):
     def __init__(self):
