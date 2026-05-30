@@ -71,10 +71,10 @@ class ObstacleNav(Node):
         
     def test(self):
         msg = SetVelocity()
-        msg.linear_x = float(4)
+        msg.linear_x = float(40)
         
         self.pub.publish(msg)
-        #time.sleep(duration_s)
+        time.sleep(duration_s)
 
     def _goal_listener_callback(self, msg):
         self.get_logger().info('I heard: "%s"' % msg.data)
