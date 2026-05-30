@@ -55,7 +55,7 @@ class ObstacleNav(Node):
 
         #movement client test...
         self._client = ActionClient(self, SetVelocity, '/set_velocity')
-        while not self._client.wait_for_service(timeout_sec=1.0):
+        while not self._client.wait_for_server(timeout_sec=1.0):
             self.get_logger().info('service not available, waiting again...')
         _TICK_HZ = 10       # publish rate during an edge (Hz)
         _TICK_SEC = 1.0 / _TICK_HZ
