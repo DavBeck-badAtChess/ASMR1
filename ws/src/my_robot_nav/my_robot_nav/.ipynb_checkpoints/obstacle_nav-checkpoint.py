@@ -26,6 +26,7 @@ from geometry_msgs.msg import PointStamped
 from sensor_msgs.msg import LaserScan
 import tf2_geometry_msgs  # noqa: F401  (registers transform support for PointStamped)
 import numpy as np
+from my_robot_control.velocity_controller_node import VelocityState
 
 
 class ObstacleNav(Node):
@@ -47,6 +48,15 @@ class ObstacleNav(Node):
             self._lidar_listener_callback, 
             10)
         self._lidar_subscription # prevent unused variable warning
+
+
+        test_vel = VelocityState()
+        self.get_logger().info(f"ac state {test_vel.active}")
+        self.get_logger().info(f"ang z {test_vel.angular_z}")
+        self.get_logger().info(f"lin x {test_vel.linear_x}")
+        test_vel.set_goal(1.0,1.0)
+        
+        
 
 
     def _goal_listener_callback(self, msg):

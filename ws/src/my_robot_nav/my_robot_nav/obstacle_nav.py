@@ -26,7 +26,7 @@ from geometry_msgs.msg import PointStamped
 from sensor_msgs.msg import LaserScan
 import tf2_geometry_msgs  # noqa: F401  (registers transform support for PointStamped)
 import numpy as np
-from ...my_robot_control.my_robot_control.velocity_controller_node import VelocityState
+from my_robot_control.velocity_controller_node import VelocityState
 
 
 class ObstacleNav(Node):
