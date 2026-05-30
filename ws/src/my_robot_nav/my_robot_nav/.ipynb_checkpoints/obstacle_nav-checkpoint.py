@@ -19,27 +19,100 @@
 #================================================================================================
 
 import rclpy
+import tf2_ros
 from rclpy.action import ActionClient
 from rclpy.node import Node
 from geometry_msgs.msg import PointStamped
+from sensor_msgs.msg import LaserScan
+import tf2_geometry_msgs  # noqa: F401  (registers transform support for PointStamped)
+import numpy as np
+
 
 class ObstacleNav(Node):
     def __init__(self):
         super().__init__('obstacle_nav')
+        self._tf_buffer = tf2_ros.Buffer()
+        self._tf_listener = tf2_ros.TransformListener(self._tf_buffer, self)
         
-        self._subscription = self.create_subscription(
+        self._goal_subscription = self.create_subscription(
             PointStamped,
             "/goal_point",
             self._goal_listener_callback,
             10)
+        self._goal_subscription  # prevent unused variable warning
         
-        self._subscription  # prevent unused variable warning
-        self.get_logger().info('satarting ObstacleNav')
-
+        self._lidar_subscription = self.create_subscription(
+            LaserScan,
+            '/scan', 
+            self._lidar_listener_callback, 
+            10)
+        self._lidar_subscription # prevent unused variable warning
 
 
     def _goal_listener_callback(self, msg):
         self.get_logger().info('I heard: "%s"' % msg.data)
+
+    def _lidar_listener_callback(self, msg):
+        #self.get_logger().info('I heard: "%s"' % msg.data)
+        self.remove_me(msg)
+    
+    #...................................
+    def remove_me(self, msg: LaserScan) -> None:
+        # TODO 1: find the index of the minimum range value in msg.ranges
+        #         (ignore inf and nan values — use math.isfinite())
+
+        arr = np.array(msg.ranges)
+        nan_mask = np.isnan(arr)
+        inf_mask = np.isinf(arr)
+        total_mask = inf_mask | nan_mask
+        #arr = arr[~total_mask]
+        arr[nan_mask] = np.inf
+        self.get_logger().info(f"{type(arr)}")
+        self.get_logger().info(f"{arr.shape}")
+        
+        idx = np.argmin(arr)
+        self.get_logger().info(f"{arr[idx]}")
+
+        # TODO 2: compute the angle of that beam
+        #         angle = msg.angle_min + idx * msg.angle_increment
+        angle = (msg.angle_min + idx * msg.angle_increment)/180 * np.pi
+
+        # TODO 3: convert polar (msg.ranges[idx], angle) to Cartesian (x, y)
+        #         in the lidar_link frame  —  x = r*cos(θ),  y = r*sin(θ)
+        
+        x = np.cos(angle) * arr[idx]
+        y = np.sin(angle) * arr[idx]
+        
+
+        # TODO 4: fill in the PointStamped message
+        point_in_lidar = PointStamped()
+        point_in_lidar.header.frame_id = "lidar_link"   # which frame is this point in?
+        point_in_lidar.header.stamp = msg.header.stamp       # use the scan message's timestamp
+        point_in_lidar.point.x = x
+        point_in_lidar.point.y = y
+        point_in_lidar.point.z = 0.0
+
+        # TODO 5: look up the transform from lidar_link to base_link
+        #         use rclpy.time.Time() to request the latest available transform
+        try:
+            tf = self._tf_buffer.lookup_transform(
+                "base_link",   # target frame
+                "lidar_link",   # source frame
+                rclpy.time.Time()   # time
+            )
+        except tf2_ros.LookupException:
+            return
+
+        # TODO 6: apply the transform to obtain the point in base_link
+        point_in_base = tf2_geometry_msgs.do_transform_point(point_in_lidar, tf)
+
+        self.get_logger().info(
+            f'Nearest obstacle — lidar_link: ({x:.3f}, {y:.3f}, 0.000)  '
+            f'base_link: ({point_in_base.point.x:.3f}, '
+            f'{point_in_base.point.y:.3f}, '
+            f'{point_in_base.point.z:.3f})'
+        )
+    #...................................
 
 
 
