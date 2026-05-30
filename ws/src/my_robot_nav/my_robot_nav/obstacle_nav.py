@@ -26,14 +26,30 @@ from geometry_msgs.msg import PointStamped
 from sensor_msgs.msg import LaserScan
 import tf2_geometry_msgs  # noqa: F401  (registers transform support for PointStamped)
 import numpy as np
-from my_robot_control.velocity_controller_node import VelocityState
+from my_robot_interfaces.action import SetVelocity # this is the action defined by the provided movement controller, the topic is /set_velocity
 
-
+"""# Goal — request a constant velocity command. The controller publishes
+# /cmd_vel at its tick rate using these values until a new goal preempts
+# this one or the client cancels.
+float64 linear_x
+float64 angular_z
+---
+# Result — populated on cancel / preempt / shutdown.
+bool stopped
+---
+# Feedback — published at the controller's tick rate.
+float64 current_linear_x
+float64 current_angular_z
+"""
 class ObstacleNav(Node):
     def __init__(self):
         super().__init__('obstacle_nav')
         self._tf_buffer = tf2_ros.Buffer()
         self._tf_listener = tf2_ros.TransformListener(self._tf_buffer, self)
+
+        node = rclpy.create_node('move_nav')
+        self.pub = node.create_publisher(SetVelocity, '/set_velocity', 10)
+        self.test()
         
         self._goal_subscription = self.create_subscription(
             PointStamped,
@@ -49,15 +65,16 @@ class ObstacleNav(Node):
             10)
         self._lidar_subscription # prevent unused variable warning
 
+        node.destroy_node()
 
-        test_vel = VelocityState()
-        self.get_logger().info(f"ac state {test_vel.active}")
-        self.get_logger().info(f"ang z {test_vel.angular_z}")
-        self.get_logger().info(f"lin x {test_vel.linear_x}")
-        test_vel.set_goal(1.0,1.0)
         
         
-
+    def test(self):
+        msg = SetVelocity()
+        msg.linear_x = float(4)
+        
+        self.pub.publish(msg)
+        #time.sleep(duration_s)
 
     def _goal_listener_callback(self, msg):
         self.get_logger().info('I heard: "%s"' % msg.data)
