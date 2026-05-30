@@ -29,10 +29,14 @@ class ObstacleNav(Node):
         
         self._subscription = self.create_subscription(
             PointStamped,
-            "/goal_poin"t,
+            "/goal_point",
             self._goal_listener_callback,
             10)
+        
         self._subscription  # prevent unused variable warning
+        self.get_logger().info('satarting ObstacleNav')
+
+
 
     def _goal_listener_callback(self, msg):
         self.get_logger().info('I heard: "%s"' % msg.data)
@@ -40,18 +44,17 @@ class ObstacleNav(Node):
 
 
 def main(args=None) -> None:
-    """Initialise rclpy, run the node, and shut down cleanly."""
     rclpy.init(args=args)
-    node = ObstacleNav()
-    try:
-        # By the time spin() is called, the star is already drawn.
-        # spin() keeps the node alive so turtlesim stays open and the
-        # user can see the result. Press Ctrl+C to exit.
-        rclpy.spin(node)
-    finally:
-        node.destroy_node()
-        rclpy.shutdown()
 
+    obstacle_nav = ObstacleNav()
+
+    rclpy.spin(obstacle_nav)
+
+    # Destroy the node explicitly
+    # (optional - otherwise it will be done automatically
+    # when the garbage collector destroys the node object)
+    obstacle_nav.destroy_node()
+    rclpy.shutdown()
 
 if __name__ == '__main__':
     main()
