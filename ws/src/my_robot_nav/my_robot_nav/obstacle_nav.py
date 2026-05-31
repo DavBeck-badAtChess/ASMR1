@@ -20,13 +20,16 @@
 
 import rclpy
 import tf2_ros
+import tf2_geometry_msgs  # noqa: F401  (registers transform support for PointStamped)
 from rclpy.action import ActionClient
 from rclpy.node import Node
 from geometry_msgs.msg import PointStamped
 from sensor_msgs.msg import LaserScan
-import tf2_geometry_msgs  # noqa: F401  (registers transform support for PointStamped)
 import numpy as np
+
 from my_robot_interfaces.action import SetVelocity # this is the action defined by the provided movement controller, the topic is /set_velocity
+
+
 """# Goal — request a constant velocity command. The controller publishes
 # /cmd_vel at its tick rate using these values until a new goal preempts
 # this one or the client cancels.
@@ -40,46 +43,40 @@ bool stopped
 float64 current_linear_x
 float64 current_angular_z
 """
+_TICK_HZ = 10       # publish rate during an edge (Hz)
+_TICK_SEC = 1.0 / _TICK_HZ
+
 class ObstacleNav(Node):
 
-    def _call_service(self, client, request) -> None:
-        future = client.call_async(request)
-        rclpy.spin_until_future_complete(self, future)
-
+    
     def __init__(self):
         super().__init__('obstacle_nav')
         self._tf_buffer = tf2_ros.Buffer()
         self._tf_listener = tf2_ros.TransformListener(self._tf_buffer, self)
         
-        
-
+    
         #movement client test...
-        self._client = ActionClient(self, SetVelocity, '/set_velocity')
-        while not self._client.wait_for_server(timeout_sec=1.0):
+        self._movement_client = ActionClient(self, SetVelocity, '/set_velocity')
+        while not self._movement_client.wait_for_server(timeout_sec=1.0):
             self.get_logger().info('service set velocity not available, waiting again...')
-        _TICK_HZ = 10       # publish rate during an edge (Hz)
-        _TICK_SEC = 1.0 / _TICK_HZ
-
-        g = SetVelocity.Goal()
-        g.linear_x = 1.0
-        g.angular_z = 0.0
-        for i in range(10):
-            self._client.send_goal_async(g)
-            rclpy.spin_once(self, timeout_sec=_TICK_SEC)
-        #/movement client test...
-
-
         
+        # this is how to use the action
+        # g = SetVelocity.Goal()
+        # g.linear_x = 1.0
+        # g.angular_z = 0.0
+        # for i in range(10):
+        #     self._movement_client.send_goal_async(g)
+        #     rclpy.spin_once(self, timeout_sec=_TICK_SEC)
 
-        
-        
+
         self._goal_subscription = self.create_subscription(
             PointStamped,
             "/goal_point",
             self._goal_listener_callback,
             10)
         self._goal_subscription  # prevent unused variable warning
-        
+
+
         self._lidar_subscription = self.create_subscription(
             LaserScan,
             '/scan', 

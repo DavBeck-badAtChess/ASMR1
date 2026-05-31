@@ -11,7 +11,7 @@ def generate_launch_description():
         [FindPackageShare('my_robot_description'), 'urdf', 'my_robot.urdf.xacro']
     )
     world_path = PathJoinSubstitution(
-        [FindPackageShare('my_robot_bringup'), 'worlds', 'wall_world.sdf']
+        [FindPackageShare('my_robot_bringup'), 'worlds', 'obstacle_world.sdf']
     )
     bridge_config = PathJoinSubstitution(
         [FindPackageShare('my_robot_bringup'), 'config', 'bridge.yaml']
@@ -68,6 +68,13 @@ def generate_launch_description():
             package='my_robot_control',
             executable='velocity_controller_node',
             name='velocity_controller_node',
+            output='screen'
+        ),
+        Node(# add the goal checker nodek
+            package='my_robot_perception',
+            executable='goal_checker_node',
+            name='goal_checker_node',
+            arguments=["goal_x = 10.0", "goal_y = 3.0"],
             output='screen'
         ),
     ])
