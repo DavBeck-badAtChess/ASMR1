@@ -20,9 +20,6 @@ def generate_launch_description():
         [FindPackageShare('my_robot_bringup'), 'config', 'my_robot.rviz']
     )
 
-    nav_path = PathJoinSubstitution(
-        [FindPackageShare('my_robot_nav'), 'my_robot_nav', 'my_robot_nav.py']
-    )
 
     return LaunchDescription([
         Node(
@@ -64,6 +61,13 @@ def generate_launch_description():
             package='my_robot_nav',
             executable='obstacle_nav',
             name='my_robot_nav',
+            output='screen'
+        ),
+        
+        Node(# add the robot velocity controller  
+            package='my_robot_controll',
+            executable='velocity_controller_node',
+            name='velocity_controller_node',
             output='screen'
         ),
     ])
