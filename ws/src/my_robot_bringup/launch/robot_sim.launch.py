@@ -65,7 +65,7 @@ def generate_launch_description():
         ),
         
         Node(# add the robot velocity controller  
-            package='my_robot_controll',
+            package='my_robot_control',
             executable='velocity_controller_node',
             name='velocity_controller_node',
             output='screen'

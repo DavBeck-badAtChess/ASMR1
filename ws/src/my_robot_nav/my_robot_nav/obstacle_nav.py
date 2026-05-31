@@ -56,11 +56,15 @@ class ObstacleNav(Node):
         #movement client test...
         self._client = ActionClient(self, SetVelocity, '/set_velocity')
         while not self._client.wait_for_server(timeout_sec=1.0):
-            self.get_logger().info('service not available, waiting again...')
+            self.get_logger().info('service set velocity not available, waiting again...')
         _TICK_HZ = 10       # publish rate during an edge (Hz)
         _TICK_SEC = 1.0 / _TICK_HZ
+
+        g = SetVelocity.Goal()
+        g.linear_x = 1.0
+        g.angular_z = 0.0
         for i in range(10):
-            self._call_service(self._client,SetVelocity.Request(linear_x = 4))
+            self._client.send_goal_async(g)
             rclpy.spin_once(self, timeout_sec=_TICK_SEC)
         #/movement client test...
 
