@@ -2,10 +2,6 @@ from __future__ import annotations
 import sys
 sys.dont_write_bytecode = True
 import numpy as np 
-import matplotlib.pyplot as plt
-from typing import Protocol, Any
-
-import time 
 from enum import Enum
 
 class DIRECTION(Enum):
@@ -29,7 +25,7 @@ class DIRECTION(Enum):
             ret += en.vec_dir
         ret /= np.linalg.norm(ret)
         return ret
-    
+
     @staticmethod
     def compund(tile_source:tuple[int,int], tile_target:tuple[int,int])->set[DIRECTION]:
         compund:set[DIRECTION] = set()
@@ -42,11 +38,6 @@ class DIRECTION(Enum):
         elif tile_source[1] < tile_target[1]:
             compund.add(DIRECTION.DOWN)
         return compund
-
-        
-
-        
-
 
 
 class Solver:
@@ -88,8 +79,6 @@ class Solver:
         if np.any(new_geometry_mask and self._path_mask):
             self._dirty_surrounding_flag = True
 
-        
-
     def __init__(self, maze_shape: tuple[int,int], goal_tile:tuple[int,int]):
         self._MAXIMUM_DIST:int = maze_shape[0] * maze_shape[1]
         self._shortest_travel_dist:int = -1
@@ -97,7 +86,6 @@ class Solver:
         self._maze: np.ndarray = np.ones(maze_shape)
         self._maze_solved : np.ndarray = np.ones(maze_shape)
         self._path_mask : np.ndarray = np.zeros(maze_shape, dtype=bool)
-
         self._dirty_surrounding_flag:bool = True
 
     def _figure_out_next_step(self, position_tile: tuple[int,int])-> tuple[tuple[int,int], int]:
@@ -111,8 +99,6 @@ class Solver:
                 best_tile = n
                 s = self._maze_solved[n]
         return best_tile
-
-
 
     def _solve_maze(self, position_tile:tuple[int,int])->np.ndarray:
         '''
@@ -148,6 +134,9 @@ class Solver:
             tiles_to_search = tiles_to_search_next
 
     def _update_path_mask(self, position_tile:tuple[int,int]):
+        '''
+        walk along the ideal path and save it in the boolean mask
+        '''
         cur_pos = position_tile
         self._path_mask.fill(False)
         while cur_pos != self._goal_tile:
@@ -162,39 +151,4 @@ class Solver:
     def path_mask(self)-> np.ndarray:
         return self._path_mask
 
-    
-
-
-
-#maze=plt.imread("/Users/davidbeckschulte/Desktop/maze_100x80.png")
-maze=plt.imread("/Users/davidbeckschulte/Desktop/obstacles_100x100.png")
-maze = maze[:,:,0]
-mask = maze < 1
-maze[mask] = -1
-#solved = Solver.solve()
-
-goal = (3,3)
-end = (90,71)
-
-goal = (3,50)
-end = (90,50)
-
-#maze = Solver.solve(maze=maze, goal_tile=goal, position_tile=end)
-
-solver = Solver(maze_shape= maze.shape, goal_tile=goal)
-
-start = time.time()
-solver._solve_maze( position_tile=end)
-solver._update_path_mask(end)
-end = time.time();print(f"time {start-end}")
-
-
-
-
-
-
-#plt.imshow(solver.solved_maze)
-plt.imshow(solver._path_mask+ maze)
-
-plt.show()
 
