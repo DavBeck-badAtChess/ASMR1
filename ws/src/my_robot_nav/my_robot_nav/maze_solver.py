@@ -3,8 +3,50 @@ import sys
 sys.dont_write_bytecode = True
 import numpy as np 
 import matplotlib.pyplot as plt
+from typing import Protocol, Any
 
 import time 
+from enum import Enum
+
+class DIRECTION(Enum):
+    UP =   (0,np.array([0,1]))
+    DOWN = (1,np.array([0,-1]))
+    RIGHT =  (2, np.array([1.0]))
+    LEFT = (3,np.array([-1,0]))
+
+    def __init__(self, id:int, dir:np.ndarray):
+        super().__init__(id)
+        self._vec_dir:np.ndarray = dir
+
+    @property
+    def vec_dir(self)->np.ndarray:
+        return self._vec_dir
+
+    @staticmethod
+    def resolve_compund_to_vec_dir(compund:set[DIRECTION])->np.ndarray:
+        ret :np.ndarray = np.zeros((2,))
+        for en in compund:
+            ret += en.vec_dir
+        ret /= np.linalg.norm(ret)
+        return ret
+    
+    @staticmethod
+    def compund(tile_source:tuple[int,int], tile_target:tuple[int,int])->set[DIRECTION]:
+        compund:set[DIRECTION] = set()
+        if tile_source[0] < tile_target[0]:
+            compund.add(DIRECTION.RIGHT)
+        elif tile_source[0] < tile_target[0]:
+            compund.add(DIRECTION.LEFT)
+        if tile_source[1] < tile_target[1]:
+            compund.add(DIRECTION.UP)
+        elif tile_source[1] < tile_target[1]:
+            compund.add(DIRECTION.DOWN)
+        return compund
+
+        
+
+        
+
 
 
 class Solver:
@@ -26,6 +68,28 @@ class Solver:
         ret.remove(idx_tile)
         return ret
     
+    def get_next_direction(self, tile_position:tuple[int,int]):
+        '''
+        check if the maps (paths etc) need to be updated, and returns the DIRECTION compund of the next step
+        '''
+        if self._dirty_surrounding_flag:
+            self._solve_maze(position_tile=tile_position)
+            self._update_path_mask(position_tile=tile_position)
+        target_tile = self._figure_out_next_step(tile_position=tile_position)
+        return DIRECTION.compund(target_tile = target_tile, tile_source=tile_position)
+        
+
+
+    def account_for_geometry(self, new_geometry_mask:np.ndarray):
+        '''
+        i assume a correctly sized mask containing all the new geometry as true, rest false
+        '''
+        self._maze[new_geometry_mask] = -1
+        if np.any(new_geometry_mask and self._path_mask):
+            self._dirty_surrounding_flag = True
+
+        
+
     def __init__(self, maze_shape: tuple[int,int], goal_tile:tuple[int,int]):
         self._MAXIMUM_DIST:int = maze_shape[0] * maze_shape[1]
         self._shortest_travel_dist:int = -1
@@ -34,13 +98,15 @@ class Solver:
         self._maze_solved : np.ndarray = np.ones(maze_shape)
         self._path_mask : np.ndarray = np.zeros(maze_shape, dtype=bool)
 
-    def _figure_out_next_step(self, idx_tile: tuple[int,int])-> tuple[tuple[int,int], int]:
+        self._dirty_surrounding_flag:bool = True
+
+    def _figure_out_next_step(self, position_tile: tuple[int,int])-> tuple[tuple[int,int], int]:
         """
         check all the vallid neigbors and return the one with the smolest val. it is assumed, that this is always better than the current one
         """
         s = self._MAXIMUM_DIST
         best_tile:tuple = None
-        for n in Solver.get_neigbors(maze=self._maze_solved, idx_tile=idx_tile):
+        for n in Solver.get_neigbors(maze=self._maze_solved, idx_tile=position_tile):
             if self._maze_solved[n] < s:
                 best_tile = n
                 s = self._maze_solved[n]
@@ -48,7 +114,7 @@ class Solver:
 
 
 
-    def solve(self,maze:np.ndarray, goal_tile:tuple[int,int], curr_pos_tile:tuple[int,int])->np.ndarray:
+    def _solve_maze(self, position_tile:tuple[int,int])->np.ndarray:
         '''
         it works like this (innefficient for now):
         it starts witht he goal_tile, sees the surrounding tiles, sets all of them to:
@@ -59,10 +125,10 @@ class Solver:
         (here it could be more efficient, it is smarter to search some idx than others).
         the whole thing terminates, when the goal is found (this is guarantueed to be the shortest path)
         '''
-        tiles_to_search:   set[int] = set([goal_tile])
+        tiles_to_search:   set[int] = set([self._goal_tile])
 
         self._maze_solved[self._maze_solved > 0] = self._MAXIMUM_DIST
-        self._maze_solved[goal_tile[0], goal_tile[1]] = 1
+        self._maze_solved[self._goal_tile[0], self._goal_tile[1]] = 1
 
         found:bool = False
         while not found:
@@ -73,7 +139,7 @@ class Solver:
                 for n in Solver.get_neigbors(maze = maze, idx_tile = tile):
                     if self._maze_solved[n] > next_val:
                         self._maze_solved[n] = next_val
-                        if n == curr_pos_tile:
+                        if n == position_tile:
                             shortest_dist = self._maze_solved[n]
                             mask = self._maze_solved > shortest_dist
                             self._maze_solved[mask] = shortest_dist+1
@@ -113,12 +179,12 @@ end = (90,71)
 goal = (3,50)
 end = (90,50)
 
-#maze = Solver.solve(maze=maze, goal_tile=goal, curr_pos_tile=end)
+#maze = Solver.solve(maze=maze, goal_tile=goal, position_tile=end)
 
 solver = Solver(maze_shape= maze.shape, goal_tile=goal)
 
 start = time.time()
-solver.solve(maze= maze, goal_tile=goal, curr_pos_tile=end)
+solver._solve_maze( position_tile=end)
 solver._update_path_mask(end)
 end = time.time();print(f"time {start-end}")
 
