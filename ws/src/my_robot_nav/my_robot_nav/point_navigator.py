@@ -39,17 +39,39 @@ class PointNavigator(Node):
         #     rclpy.spin_once(self, timeout_sec=_TICK_SEC)
 
 
-        while True:
-            rclpy.spin_once(self, timeout_sec=1.0)
-            try:
-                tf = self._tf_buffer.lookup_transform(
-                    "odom",   # target frame
-                    "base_link",   # source frame
-                    rclpy.time.Time()   # time
-                )
-                self.get_logger().info(tf)
-            except tf2_ros.LookupException:
-                self.get_logger().info("exeption called :(")
+        
+    
+    def test(self):
+        tf = None
+        try:
+            tf = self._tf_buffer.lookup_transform(
+                "odom",   # target frame
+                "base_link",   # source frame
+                rclpy.time.Time()   # time
+            )
+        except tf2_ros.LookupException:
+            self.get_logger().info("exeption called :(")
+            return
+        
+        point_test = PointStamped()
+        point_test.header.frame_id = "odom"   # which frame is this point in?
+        point_test.header.stamp = rclpy.time.Time()
+        point_test.point.x = 1
+        point_test.point.y = 2
+        point_test.point.z = 0.0
+        
+        point_in_base = tf2_geometry_msgs.do_transform_point(point_test, tf)
+
+        self.get_logger().info(
+            f'Nearest obstacle — lidar_link: ({x:.3f}, {y:.3f}, 0.000)  '
+            f'base_link: ({point_in_base.point.x:.3f}, '
+            f'{point_in_base.point.y:.3f}, '
+            f'{point_in_base.point.z:.3f})'
+        )
+        
+    
+
+
 
 
 def main(args=None) -> None:
@@ -58,7 +80,9 @@ def main(args=None) -> None:
     point_navigator = PointNavigator()
 
     rclpy.spin(point_navigator)
-
+    while True:
+        rclpy.spin_once(point_navigator, timeout_sec=1.0)
+        point_navigator.test()
     # Destroy the node explicitly
     # (optional - otherwise it will be done automatically
     # when the garbage collector destroys the node object)
