@@ -25,6 +25,7 @@ setup(
     entry_points={
         'console_scripts': [
             'obstacle_nav = my_robot_nav.obstacle_nav:main',
+            'point_navigator = my_robot_nav.point_navigator:main',
         ],
     },
 )

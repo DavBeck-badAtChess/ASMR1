@@ -65,6 +65,12 @@ def generate_launch_description():
             name='my_robot_nav',
             output='screen'
         ),
+        Node(# start the point navigator
+            package='my_robot_nav',
+            executable='point_navigator',
+            name='point_navigator',
+            output='screen'
+        ),
         
         Node(# add the robot velocity controller  
             package='my_robot_control',
