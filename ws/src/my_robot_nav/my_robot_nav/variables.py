@@ -1,0 +1,1 @@
+ROBOT_WIDTH = 0.2
