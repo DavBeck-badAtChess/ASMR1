@@ -31,11 +31,11 @@ class DIRECTION(Enum):
         compund:set[DIRECTION] = set()
         if tile_source[0] < tile_target[0]:
             compund.add(DIRECTION.RIGHT)
-        elif tile_source[0] < tile_target[0]:
+        elif tile_source[0] > tile_target[0]:
             compund.add(DIRECTION.LEFT)
         if tile_source[1] < tile_target[1]:
             compund.add(DIRECTION.UP)
-        elif tile_source[1] < tile_target[1]:
+        elif tile_source[1] > tile_target[1]:
             compund.add(DIRECTION.DOWN)
         return compund
 
@@ -58,26 +58,6 @@ class Solver:
                 if maze[i,j] >0 : ret.add((i,j))
         ret.remove(idx_tile)
         return ret
-    
-    def get_next_direction(self, tile_position:tuple[int,int]):
-        '''
-        check if the maps (paths etc) need to be updated, and returns the DIRECTION compund of the next step
-        '''
-        if self._dirty_surrounding_flag:
-            self._solve_maze(position_tile=tile_position)
-            self._update_path_mask(position_tile=tile_position)
-        target_tile = self._figure_out_next_step(tile_position=tile_position)
-        return DIRECTION.compund(target_tile = target_tile, tile_source=tile_position)
-        
-
-
-    def account_for_geometry(self, new_geometry_mask:np.ndarray):
-        '''
-        i assume a correctly sized mask containing all the new geometry as true, rest false
-        '''
-        self._maze[new_geometry_mask] = -1
-        if np.any(new_geometry_mask and self._path_mask):
-            self._dirty_surrounding_flag = True
 
     def __init__(self, maze_shape: tuple[int,int], goal_tile:tuple[int,int]):
         self._MAXIMUM_DIST:int = maze_shape[0] * maze_shape[1]
@@ -87,6 +67,24 @@ class Solver:
         self._maze_solved : np.ndarray = np.ones(maze_shape)
         self._path_mask : np.ndarray = np.zeros(maze_shape, dtype=bool)
         self._dirty_surrounding_flag:bool = True
+
+    def get_next_direction(self, tile_position:tuple[int,int]) -> set[DIRECTION]:
+        '''
+        check if the maps (paths etc) need to be updated, and returns the DIRECTION compund of the next step
+        '''
+        if self._dirty_surrounding_flag:
+            self._solve_maze(position_tile=tile_position)
+            self._update_path_mask(position_tile=tile_position)
+        target_tile = self._figure_out_next_step(tile_position=tile_position)
+        return DIRECTION.compund(target_tile = target_tile, tile_source=tile_position)
+
+    def account_for_geometry(self, new_geometry_mask:np.ndarray):
+        '''
+        i assume a correctly sized mask containing all the new geometry as true, rest false
+        '''
+        self._maze[new_geometry_mask] = -1
+        if np.any(new_geometry_mask and self._path_mask):
+            self._dirty_surrounding_flag = True
 
     def _figure_out_next_step(self, position_tile: tuple[int,int])-> tuple[tuple[int,int], int]:
         """
@@ -143,6 +141,7 @@ class Solver:
             self._path_mask[cur_pos] = True
             cur_pos = self._figure_out_next_step(cur_pos)
 
+
     @property
     def solved_maze(self)-> np.ndarray:
         return self._maze_solved
@@ -150,5 +149,4 @@ class Solver:
     @property
     def path_mask(self)-> np.ndarray:
         return self._path_mask
-
 
