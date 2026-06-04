@@ -13,7 +13,15 @@ from geometry_msgs.msg import PointStamped
 from rclpy.node import Node
 from my_robot_interfaces.action import SetVelocity # this is the action defined by the provided movement controller, the topic is /set_velocity
 
+
+
 class PointNavigator(Node):
+    @staticmethod
+    def get_appropriate_speed(dist:float)->float:
+        return 0.5
+        
+
+
     '''
     this node is responsible, for driving the robot, do a designated point.
     it subscirbes odom, and uses the provided controller to controll the robot.
@@ -47,22 +55,22 @@ class PointNavigator(Node):
         while not self._movement_client.wait_for_server(timeout_sec=1.0):
             self.get_logger().info('service set velocity not available, waiting again...')
         
-        #self.timer = self.create_timer(1.0, self.timer_callback)
-        self._timer = self.create_timer(
-            1.0 / self.TICK_HZ, self._update
-        )
+        start = self.get_clock().now()
+        while (self.get_clock().now() - start).nanoseconds < 5e9:
+            rclpy.spin_once(self, timeout_sec=0.1)
+            self.get_logger().info('doing_nothing')
         self.get_logger().info('point_navigator now running')
+        self.drive_to(self.test_mission[self.mission_counter])
         
 
     def feedback_callback(self, feedback_msg):
         fb = feedback_msg.feedback
-        #print("current v:", fb.current_linear_x)
-        #print("current w:", fb.current_angular_z)
 
         if np.abs(self._goal.linear_x -fb.current_linear_x) <0.02:
             if np.abs(self._goal.angular_z -fb.current_angular_z) <0.02:
                 if not self.fb_there:self.get_logger().info(f'ready_to_move_again')
                 self.fb_there = True
+                self._drive()
         
     def _update_globa_to_local_tf(self):
         '''
@@ -97,28 +105,23 @@ class PointNavigator(Node):
     def drive_to(self, waypoint: np.ndarray):
         self._current_waypoint = waypoint
         self._reached = False
-      #  self._update() # call this update emedietly for a fast resoponse
+        self._drive()
+        self.get_logger().info(f'starting mission')
+
 
     def _send_waypoint_reached_signal(self):
         self.get_logger().info(f'goal reached !!!')
-        pass
+        self.mission_counter += 1
+        if self.mission_counter > 3:
+            self.mission_counter=0
+        self.drive_to(self.test_mission[self.mission_counter])
 
-    def _update(self):
+
+    def _drive(self):
         '''
         get the correct rotation angle, get the global one, make the correct adjustment, and continue driving.
         check wheter the goal is reached (some closenes threashold)
         '''
-        self.count += 1
-        if self.count == 50:
-            self.drive_to(self.test_mission[self.mission_counter])
-        elif self.count <50:
-            self.get_logger().info(f'count {self.count}')
-        else:
-            pass
-            #self.get_logger().info(f'moving {self._reached}')
-        
-        if not self.fb_there:
-            return 
 
         self._update_globa_to_local_tf()
         if self._reached or self._globa_to_local_tf is None:
@@ -132,28 +135,20 @@ class PointNavigator(Node):
             stop the movement, set the flag, and send the signal
             '''
             self._reached = True
-            #self._goal.linear_x = 0.0
-            #self._goal.angular_z = 0.0
-            #self._movement_client.send_goal_async(self._goal)
             self._send_waypoint_reached_signal()
-
-            self.mission_counter += 1
-            if self.mission_counter > 3:
-                self.mission_counter=0
-            self.drive_to(self.test_mission[self.mission_counter])
-            
             return
 
         target_angle = np.arctan2(local_goal[1],local_goal[0])
         
-        forward_vel = 1.0
+        forward_vel = PointNavigator.get_appropriate_speed(np.linalg.norm(local_goal))
 
         self._goal.linear_x = forward_vel
         self._goal.angular_z = target_angle
 
         self._movement_client.send_goal_async(self._goal, feedback_callback=self.feedback_callback)
         self.fb_there = False
-        #if self.count> 50:self.get_logger().info(f'moving send with local {local_goal}')
+        self.get_logger().info(f'tick')
+        
         
 
 
