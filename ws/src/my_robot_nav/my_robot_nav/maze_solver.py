@@ -4,6 +4,14 @@ sys.dont_write_bytecode = True
 import numpy as np 
 from enum import Enum
 
+
+'''
+TODO 
+the maze should really be a bool map. 
+there needs to be an intermediate maze map, with buffer zones arround the actual obsticals (bool map too).
+other than that, this should be fine
+'''
+
 class DIRECTION(Enum):
     UP =   (0,np.array([0,1]))
     DOWN = (1,np.array([0,-1]))
