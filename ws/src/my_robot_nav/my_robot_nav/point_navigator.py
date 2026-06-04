@@ -28,8 +28,7 @@ class PointNavigator(Node):
         while not self._movement_client.wait_for_server(timeout_sec=1.0):
             self.get_logger().info('service set velocity not available, waiting again...')
         
-        transform = self._tf_buffer.lookup_transform("odom", "base_link")
-        self.get_logger().info(transform)
+        
 
         # this is how to use the action
         # g = SetVelocity.Goal()
@@ -38,6 +37,19 @@ class PointNavigator(Node):
         # for i in range(10):
         #     self._movement_client.send_goal_async(g)
         #     rclpy.spin_once(self, timeout_sec=_TICK_SEC)
+
+
+        while True:
+            rclpy.spin_once(self, timeout_sec=1.0)
+            try:
+                tf = self._tf_buffer.lookup_transform(
+                    "odom",   # target frame
+                    "base_link",   # source frame
+                    rclpy.time.Time()   # time
+                )
+                self.get_logger().info(tf)
+            except tf2_ros.LookupException:
+                self.get_logger().info("exeption called :(")
 
 
 def main(args=None) -> None:
