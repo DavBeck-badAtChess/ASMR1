@@ -61,7 +61,6 @@ class Solver:
 
     def __init__(self, maze_shape: tuple[int,int], goal_tile:tuple[int,int]):
         self._MAXIMUM_DIST:int = maze_shape[0] * maze_shape[1]
-        self._shortest_travel_dist:int = -1
         self._goal_tile:tuple[int,int] = goal_tile
         self._maze: np.ndarray = np.ones(maze_shape)
         self._maze_solved : np.ndarray = np.ones(maze_shape)
@@ -120,7 +119,7 @@ class Solver:
             for tile in tiles_to_search:
                 curr_val = self._maze_solved[tile]
                 next_val = curr_val + 1
-                for n in Solver.get_neigbors(maze = maze, idx_tile = tile):
+                for n in Solver.get_neigbors(maze = self._maze, idx_tile = tile):
                     if self._maze_solved[n] > next_val:
                         self._maze_solved[n] = next_val
                         if n == position_tile:
