@@ -20,7 +20,7 @@ from sensor_msgs.msg import LaserScan
 from my_robot_interfaces.action import SetVelocity # this is the action defined by the provided movement controller, the topic is /set_velocity
 
 
-class MetaController:
+class MetaController(Node):
     '''
     this is where the action happens. 
     this listens to all the nodes of interest, and commands the output (ie uses nodes to manipulate).
@@ -45,9 +45,14 @@ class MetaController:
             10)
         self._lidar_subscription # prevent unused variable warning
 
+        i = 0
+        while i < 5:
+            rclpy.spin_once(self, timeout_sec=1.0)
+        # this will kick of the driving.
+        self._on_checkpoint_reached()
 
     def _on_goal_reached(self):
-        pass
+        self._point_navigator.kill()
     
     def _on_checkpoint_reached(self):
         '''
