@@ -16,21 +16,16 @@ from my_robot_interfaces.action import SetVelocity # this is the action defined 
 
 
 class PointNavigator(Node):
-    @staticmethod
-    def get_appropriate_speed(dist:float)->float:
-        return 0.5
+
     '''
     this node is responsible, for driving the robot, do a designated point.
     it subscirbes odom, and uses the provided controller to controll the robot.
     '''
-
-    TICK_HZ = 10.0
-    CLOSNESS_THREASHOLD = 1.0
-
-    test_mission = {0:np.array([5,5]),
-                   1:np.array([-5,5]),
-                   2:np.array([-5,-5]),
-                   3:np.array([5,-5])}
+    CLOSNESS_THREASHOLD = 0.2
+    CLOSNESS_ang_renameme = 0.02
+    MAX_SPEED = 5.0
+    MAX_LIN_ACC = 0.5
+    MAX_ROT_ACC = 0.5
 
     def __init__(self):
         super().__init__('point_navigator')
@@ -38,35 +33,99 @@ class PointNavigator(Node):
         self._tf_listener = tf2_ros.TransformListener(self._tf_buffer, self)
         self._movement_client = ActionClient(self, SetVelocity, '/set_velocity')
 
-        self.mission_counter = 0
-
-
         self._current_waypoint: np.ndarray = None
-        self._reached:bool = True
+        self._current_waypoint_local: np.ndarray = None
+        self._current_heading: float = 0
+        self._favor_heading : float = 0
+
+        self._rot_pd:tuple[int,int] = (0.5,0.5)
+        self._lin_pd:tuple[int,int] = (0.5,0.5)
+
+        self._current_lin_acc:float = 0
+        self._current_rot_acc:float = 0
+    
         self._goal = SetVelocity.Goal()
         self._globa_to_local_tf = None
+
+        self._goal_reached = True
+
+        self._curr_callback:callable = None
 
         # connect to the movement client, and to the 
         while not self._movement_client.wait_for_server(timeout_sec=1.0):
             self.get_logger().info('service set velocity not available, waiting again...')
-        
-        start = self.get_clock().now()
-        while (self.get_clock().now() - start).nanoseconds < 5e9:
-            rclpy.spin_once(self, timeout_sec=0.1)
-            self.get_logger().info('doing_nothing')
+
+        while self._globa_to_local_tf is None:
+            # only start once the tf is usable
+            self._update_globa_to_local_tf()
+            rclpy.spin_once(self, timeout_sec=1.0)
+
         self.get_logger().info('point_navigator now running')
-        self.drive_to(self.test_mission[self.mission_counter])
-        
 
-    def feedback_callback(self, feedback_msg):
+    def drive_to(self, coord:np.ndarray, callback:callable):
+        '''
+        set the state to goal not reached.
+        since the privided controller will always call back at 10hrz, this will get picked up in the next update.
+        '''
+        self._current_waypoint = coord
+        self._curr_callback = callback
+        self._goal_reached = False
+        self._curr_callback = self._curr_callback
+
+    def _on_setvel_feedback(self,feedback_msg):
+        '''
+        goal is reached -> do nothing
+        goal was reached this frame -> callback 
+        the assigned states are not reached -> do nothing
+        else get new states to assign and do so
+        '''
+        if self._goal_reached: return
+        if self._check_if_goal_is_reached():
+            self._goal_reached = True
         fb = feedback_msg.feedback
-
-        if np.abs(self._goal.linear_x -fb.current_linear_x) <0.02:
-            if np.abs(self._goal.angular_z -fb.current_angular_z) <0.02:
-                if not self.fb_there:self.get_logger().info(f'ready_to_move_again')
-                pass
-                #self._drive()
+        if np.abs(self._goal.linear_x -fb.current_linear_x) > PointNavigator.CLOSNESS_ang_renameme:
+            return
+        if np.abs(self._goal.angular_z -fb.current_angular_z) > PointNavigator.CLOSNESS_ang_renameme:
+            return
         
+        self._update_headings()
+        self._update_lin_acc()
+        self._update_rot_acc()
+        
+        self._movement_client.send_goal_async(self._goal, feedback_callback=self.feedback_callback)
+
+    def _update_lin_acc(self)->float:
+        '''
+        calculate the dot of the favor direction and the actual current direction, 
+        use that as teh partial (close to 0 -> orth -> slow down visa versa).
+        use the last adjustment (which should now be the current of the gaol since this is only triggered when that is the case) as the d term 
+        no term for slowing down when the goal is close. (yet)
+        '''
+        next_acc =np.clip(np.cos(self._favor_heading-self._current_heading)*self._lin_pd[0] - self._current_rot_acc * self._lin_pd[1], -PointNavigator.MAX_LIN_ACC,PointNavigator.MAX_LIN_ACC)
+        self._goal.linear_x += next_acc
+        self._current_lin_acc = next_acc
+
+    def _update_rot_acc(self)->float:
+        '''
+        the same thing as the linear acc.
+        '''
+        next_acc =np.clip(1-np.cos(self._favor_heading-self._current_heading)*self._rot_pd[0] - self._current_rot_acc * self._rot_pd[1], -PointNavigator.MAX_ROT_ACC,PointNavigator.MAX_ROT_ACC)
+        self._goal.angular_z += next_acc
+        self._current_rot_acc = next_acc
+
+    def _check_if_goal_is_reached(self)->bool:
+        return np.linalg.norm(self._current_waypoint_local) < self.CLOSNESS_THREASHOLD
+
+    def _update_headings(self):
+        '''
+        update the tf and all the stuff the others depend on 
+        '''
+        self._update_globa_to_local_tf()
+
+        self._current_heading = self._get_global_heading()
+        self._current_waypoint_local = self._make_local(self._current_waypoint)
+        self._favor_heading = np.arctan2(self._current_waypoint_local[1],self._current_waypoint_local[0])
+
     def _update_globa_to_local_tf(self):
         '''
         provides the tf to transform global into local
@@ -92,58 +151,9 @@ class PointNavigator(Node):
         point_glob.point.z = 0
         point_local = tf2_geometry_msgs.do_transform_point(point_glob, self._globa_to_local_tf)
         return np.array([point_local.point.x,point_local.point.y])
-        #return point_local
 
     def _get_global_heading(self)->float:
         return  self._globa_to_local_tf.tf.transform.rotation.z
-
-    def drive_to(self, waypoint: np.ndarray):
-        self._current_waypoint = waypoint
-        self._reached = False
-        self._drive()
-        self.get_logger().info(f'starting mission')
-
-
-    def _send_waypoint_reached_signal(self):
-        self.get_logger().info(f'goal reached !!!')
-        self.mission_counter += 1
-        if self.mission_counter > 3:
-            self.mission_counter=0
-        self.drive_to(self.test_mission[self.mission_counter])
-
-
-    def _drive(self):
-        '''
-        get the correct rotation angle, get the global one, make the correct adjustment, and continue driving.
-        check wheter the goal is reached (some closenes threashold)
-        '''
-
-        self._update_globa_to_local_tf()
-        if self._reached or self._globa_to_local_tf is None:
-            return
-
-        local_goal = self._make_local(self._current_waypoint)
-
-        if np.linalg.norm(local_goal) < self.CLOSNESS_THREASHOLD:
-            '''
-            point is reached. 
-            stop the movement, set the flag, and send the signal
-            '''
-            self._reached = True
-            self._send_waypoint_reached_signal()
-            return
-
-        target_angle = np.arctan2(local_goal[1],local_goal[0])
-        
-        forward_vel = PointNavigator.get_appropriate_speed(np.linalg.norm(local_goal))
-
-        self._goal.linear_x = forward_vel
-        self._goal.angular_z = target_angle
-
-        self._movement_client.send_goal_async(self._goal, feedback_callback=self.feedback_callback)
-        self.get_logger().info(f'tick')
-        
-        
 
 
 def main(args=None):
