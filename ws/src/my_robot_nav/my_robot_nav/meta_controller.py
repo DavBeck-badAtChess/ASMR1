@@ -37,6 +37,7 @@ class MetaController(Node):
         self._point_navigator:PointNavigator = PointNavigator()
 
         self._current_tile: int[int,int] = Helper.get_starting_tile()
+        self._goal_tile : int[int,int] = (10,10)# i need the goal thingy to verify this
 
         self._lidar_subscription = self.create_subscription(
             LaserScan,
