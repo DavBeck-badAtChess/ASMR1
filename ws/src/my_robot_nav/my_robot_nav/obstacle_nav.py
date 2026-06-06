@@ -26,6 +26,7 @@ from rclpy.node import Node
 from geometry_msgs.msg import PointStamped
 from sensor_msgs.msg import LaserScan
 import numpy as np
+from my_robot_nav.map_test import OccGrid
 
 from my_robot_interfaces.action import SetVelocity # this is the action defined by the provided movement controller, the topic is /set_velocity
 
@@ -53,6 +54,9 @@ class ObstacleNav(Node):
         super().__init__('obstacle_nav')
         self._tf_buffer = tf2_ros.Buffer()
         self._tf_listener = tf2_ros.TransformListener(self._tf_buffer, self)
+
+
+        self._map_test=OccGrid()
         
     
         #movement client test...
@@ -91,8 +95,12 @@ class ObstacleNav(Node):
     def _lidar_listener_callback(self, msg):
         #self.get_logger().info('I heard: "%s"' % msg.data)
         #self.remove_me(msg)
-        pass
-    
+        self.ass()
+        self.get_logger().info(f'publishing')
+        
+    def ass(self):
+        self._map_test.publish()
+        self.get_logger().info(f'publishing')
     #...................................
     def remove_me(self, msg: LaserScan) -> None:
         # TODO 1: find the index of the minimum range value in msg.ranges
