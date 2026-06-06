@@ -1,4 +1,4 @@
-import variables
+import my_robot_nav.variables as variables
 import numpy as np
 
 @staticmethod
@@ -51,6 +51,11 @@ class Controller:
 
 
 
+
+
+
+
+
 class Helper:
     '''
     basically a wrapper for the data in the file. all this can be static, since the data file is static by defenition
@@ -61,61 +66,87 @@ class Helper:
         '''
         returns the x,y size of a sinlge tile (i think the was the robot size)
         '''
-        pass
+        return variables.ROBOT_WIDTH
 
     @staticmethod
     def get_world_arr_shape()->tuple[int, int]:
         '''
         return the shape of the world arr
         '''
-        pass
+        n = int((variables.MAX_DISTANCE // variables.ROBOT_WIDTH) * 2 + 1)
+        return (n,n)
 
     @staticmethod
     def world_to_tile(coord_array: np.ndarray) -> np.ndarray:
         '''
         take an array of xy coords, and returns a mask
         '''
-        pass
+        s = Helper.get_world_arr_shape()
+        i = np.round(coord_array[0] / variables.ROBOT_WIDTH) + s[0] // 2
+        j = np.round(coord_array[1] / variables.ROBOT_WIDTH) + s[1] // 2
+        return np.stack([i,j], axis=1).astype(int)
 
     @staticmethod
     def world_to_tile_single(single_coord: np.ndarray) -> tuple[int,int]:
         '''
         take a sigle xy point ( arr of shapw (2,)) and return the corresponding tile 
         '''
-        pass
-
-    @staticmethod
-    def tile_to_world_single(tile:tuple[int,int]) -> np.ndarray:
-        '''
-        bla bla
-        '''
-        pass
+        s = Helper.get_world_arr_shape()
+        i = np.round(single_coord[0] / variables.ROBOT_WIDTH) + s[0] // 2
+        j = np.round(single_coord[1] / variables.ROBOT_WIDTH) + s[1] // 2
+        return (i,j)
 
     @staticmethod
     def tile_to_world(tile_arr: np.ndarray) -> np.ndarray:
         '''
         bla bla bla
         '''
-        pass
+        tile_arr_c = tile_arr.copy()
+        shape = Helper.get_world_arr_shape()
+        size = Helper.get_tile_size()
+        tile_arr_c[:,0] -= shape[0]//2 -size[0]/2 # to position them at the center. not really needet though...
+        tile_arr_c[:,1] -= shape[1]//2 -size[1]/2
+        tile_arr_c[:,0] *= size[0]
+        tile_arr_c[:,1] *= size[1]
+        return tile_arr_c
+
+    @staticmethod
+    def tile_to_world_single(tile:tuple[int,int]) -> np.ndarray:
+        '''
+        bla bla
+        '''
+        arr = Helper.tile_to_world(np.array([tile[0], tile[1]]))
+        return (arr[0], arr[1])
 
     @staticmethod
     def get_goal_tile()-> tuple[int,int]:
-        pass
+        return Helper.world_to_tile_single(variables.GOAL_COORDS)
 
     @staticmethod
     def get_total_map_dim_in_meter() -> tuple[float, float]:
-        pass
+        shape = Helper.get_world_arr_shape()
+        size = Helper.get_tile_size()
+        return (shape[0] * size[0],shape[1] * size[1])
 
     @staticmethod
     def get_mask_from_lidar_data_raw(raw_lidar_data:np.ndarray)-> np.ndarray:
         '''
         returns a mask of the seen obstacles, obstacle -> True, else False
-        
+        first match the messurements to the angles, then throw out nan, then generate the dir vecs, ten mult with the messurements. 
         '''
+        ang = np.linspace(start=variables.LIDAR_MIN_ANG, endpoint=variables.LIDAR_MAX_ANG, num= raw_lidar_data.shape)
+        compund = np.stack([ang, raw_lidar_data] , axis= 1)
+        compund = compund[np.isnan(compund[:,0]).any(axis=0)]
+
+        dir_x = np.cos(compund[:, 1])
+        dir_y = np.sin(compund[:, 1])
+        coords = np.stack([dir_x, dir_y], axis=1)
+        coords *= compund[:,0]
+        return Helper.world_to_tile(coords)
 
     @staticmethod
     def get_starting_tile()->tuple[int,int]:
         '''
         return the tile at the very beginning
         '''
-        pass
+        return Helper.world_to_tile_single(variables.START_COORDS)
