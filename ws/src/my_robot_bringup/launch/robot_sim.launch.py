@@ -87,19 +87,26 @@ def generate_launch_description():
             output='screen'
         ),
 #
-        #Node(# start the point navigator
-        #    package='my_robot_nav',
-        #    executable='point_navigator',
-        #    name='point_navigator',
-        #    output='screen'
-        #),
-
-         Node(# start obstacle nav
+        Node(# start the point navigator
             package='my_robot_nav',
-            executable='obstacle_nav',
-            name='obstacle_nav',
+            executable='point_navigator',
+            name='point_navigator',
             output='screen'
         ),
+        
+        Node(# start the point navigator
+            package='my_robot_nav',
+            executable='meta_controller',
+            name='meta_controller',
+            output='screen'
+        ),
+
+        #  Node(# start obstacle nav
+        #     package='my_robot_nav',
+        #     executable='obstacle_nav',
+        #     name='obstacle_nav',
+        #     output='screen'
+        # ),
         
         #Node(# start the point navigator
         #    package='my_robot_nav',
