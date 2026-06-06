@@ -62,6 +62,17 @@ class PointNavigator(Node):
 
         self.get_logger().info('point_navigator now running')
 
+    def kill(self):
+        '''
+        stop it all. 
+        call once the goal is reached
+        '''
+        self._goal_reached = True
+        self._curr_callback = None
+        self._goal.linear_x = 0
+        self._goal.angular_z = 0
+        self._movement_client.send_goal_async(self._goal, feedback_callback=self.feedback_callback)
+
     def drive_to(self, coord:np.ndarray, callback:callable):
         '''
         set the state to goal not reached.
