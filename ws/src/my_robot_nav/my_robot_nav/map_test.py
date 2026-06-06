@@ -25,6 +25,7 @@ class OccGrid(Node):
         grid = np.zeros((5, 5), dtype=np.int8)
         grid[2, 2] = 100
         grid[1, 3] = 50
+        self.get_logger().info(f'map publish')
 
         msg.data = grid.flatten().tolist()
 

@@ -90,7 +90,8 @@ class ObstacleNav(Node):
 
     def _lidar_listener_callback(self, msg):
         #self.get_logger().info('I heard: "%s"' % msg.data)
-        self.remove_me(msg)
+        #self.remove_me(msg)
+        pass
     
     #...................................
     def remove_me(self, msg: LaserScan) -> None:
