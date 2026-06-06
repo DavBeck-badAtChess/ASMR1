@@ -26,7 +26,7 @@ setup(
         'console_scripts': [
             'obstacle_nav = my_robot_nav.obstacle_nav:main',
             'point_navigator = my_robot_nav.point_navigator:main',
-            'occ_grid = map_test.occ_grid:main',
+            'map_test = map_test.map_test:main',
         ],
     },
 )
