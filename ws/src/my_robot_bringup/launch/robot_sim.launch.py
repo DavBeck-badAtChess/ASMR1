@@ -11,7 +11,7 @@ def generate_launch_description():
         [FindPackageShare('my_robot_description'), 'urdf', 'my_robot.urdf.xacro']
     )
     world_path = PathJoinSubstitution(
-        [FindPackageShare('my_robot_bringup'), 'worlds', 'obstacle_world.sdf']
+        [FindPackageShare('my_robot_bringup'), 'worlds', 'wall_world.sdf']
     )
     bridge_config = PathJoinSubstitution(
         [FindPackageShare('my_robot_bringup'), 'config', 'bridge.yaml']
@@ -20,20 +20,12 @@ def generate_launch_description():
         [FindPackageShare('my_robot_bringup'), 'config', 'my_robot.rviz']
     )
 
-
     return LaunchDescription([
         Node(
             package='robot_state_publisher',
             executable='robot_state_publisher',
             parameters=[{'robot_description': ParameterValue(Command(['xacro ', urdf_path]), value_type=str)}],
         ),
-        
-        Node(
-            package='joint_state_publisher',
-            executable='joint_state_publisher',
-            name='joint_state_publisher'
-        ),
-        
         ExecuteProcess(
             cmd=['gz', 'sim', '-r', world_path],
         ),
@@ -43,8 +35,6 @@ def generate_launch_description():
             arguments=[
                 '-topic', 'robot_description',
                 '-name', 'my_robot',
-                '-x', '1.0',
-                '-y', '3.0',
                 '-z', '0.1',
             ],
         ),
@@ -59,30 +49,30 @@ def generate_launch_description():
             arguments=['-d', rviz_config],
         ),
 
-        Node(# add the robot nav node 
-            package='my_robot_nav',
-            executable='obstacle_nav',
-            name='my_robot_nav',
-            output='screen'
-        ),
-        Node(# start the point navigator
-            package='my_robot_nav',
-            executable='point_navigator',
-            name='point_navigator',
-            output='screen'
-        ),
-        
         Node(# add the robot velocity controller  
             package='my_robot_control',
             executable='velocity_controller_node',
             name='velocity_controller_node',
             output='screen'
         ),
+
         Node(# add the goal checker nodek
             package='my_robot_perception',
             executable='goal_checker_node',
             name='goal_checker_node',
-            arguments=["goal_x = 10.0", "goal_y = 3.0"],
+            
+        parameters=[{
+            'goal_x': 10.0,
+            'goal_y': 3.0,
+            'goal_threshold': 0.3
+            }],
+            output='screen'
+        ),
+
+        Node(# start the point navigator
+            package='my_robot_nav',
+            executable='point_navigator',
+            name='point_navigator',
             output='screen'
         ),
     ])

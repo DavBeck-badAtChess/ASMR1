@@ -20,20 +20,12 @@ def generate_launch_description():
         [FindPackageShare('my_robot_bringup'), 'config', 'my_robot.rviz']
     )
 
-
     return LaunchDescription([
         Node(
             package='robot_state_publisher',
             executable='robot_state_publisher',
             parameters=[{'robot_description': ParameterValue(Command(['xacro ', urdf_path]), value_type=str)}],
         ),
-        
-        Node(
-            package='joint_state_publisher',
-            executable='joint_state_publisher',
-            name='joint_state_publisher'
-        ),
-        
         ExecuteProcess(
             cmd=['gz', 'sim', '-r', world_path],
         ),
@@ -57,17 +49,30 @@ def generate_launch_description():
             arguments=['-d', rviz_config],
         ),
 
-        Node(# add the robot nav node 
-            package='my_robot_nav',
-            executable='obstacle_nav',
-            name='my_robot_nav',
-            output='screen'
-        ),
-        
         Node(# add the robot velocity controller  
             package='my_robot_control',
             executable='velocity_controller_node',
             name='velocity_controller_node',
+            output='screen'
+        ),
+
+        Node(# add the goal checker nodek
+            package='my_robot_perception',
+            executable='goal_checker_node',
+            name='goal_checker_node',
+            
+        parameters=[{
+            'goal_x': 10.0,
+            'goal_y': 3.0,
+            'goal_threshold': 0.3
+            }],
+            output='screen'
+        ),
+
+        Node(# start the point navigator
+            package='my_robot_nav',
+            executable='point_navigator',
+            name='point_navigator',
             output='screen'
         ),
     ])
