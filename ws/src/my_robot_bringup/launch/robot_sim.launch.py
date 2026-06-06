@@ -75,4 +75,11 @@ def generate_launch_description():
             name='point_navigator',
             output='screen'
         ),
+        
+        Node(# start the point navigator
+            package='my_robot_nav',
+            executable='map_test',
+            name='occ_grid',
+            output='screen'
+        ),
     ])

@@ -19,9 +19,6 @@ class PointNavigator(Node):
     @staticmethod
     def get_appropriate_speed(dist:float)->float:
         return 0.5
-        
-
-
     '''
     this node is responsible, for driving the robot, do a designated point.
     it subscirbes odom, and uses the provided controller to controll the robot.
@@ -41,15 +38,13 @@ class PointNavigator(Node):
         self._tf_listener = tf2_ros.TransformListener(self._tf_buffer, self)
         self._movement_client = ActionClient(self, SetVelocity, '/set_velocity')
 
-        self.count = 0
         self.mission_counter = 0
-        self.fb_there = True
+
 
         self._current_waypoint: np.ndarray = None
         self._reached:bool = True
         self._goal = SetVelocity.Goal()
         self._globa_to_local_tf = None
-
 
         # connect to the movement client, and to the 
         while not self._movement_client.wait_for_server(timeout_sec=1.0):
@@ -69,7 +64,7 @@ class PointNavigator(Node):
         if np.abs(self._goal.linear_x -fb.current_linear_x) <0.02:
             if np.abs(self._goal.angular_z -fb.current_angular_z) <0.02:
                 if not self.fb_there:self.get_logger().info(f'ready_to_move_again')
-                self.fb_there = True
+
                 self._drive()
         
     def _update_globa_to_local_tf(self):
@@ -146,7 +141,6 @@ class PointNavigator(Node):
         self._goal.angular_z = target_angle
 
         self._movement_client.send_goal_async(self._goal, feedback_callback=self.feedback_callback)
-        self.fb_there = False
         self.get_logger().info(f'tick')
         
         
