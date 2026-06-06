@@ -35,7 +35,7 @@ class Controller:
         result = np.column_stack((scan_values, angles))
         result = result[~np.isnan(result).any(axis=0)]
         obstacle_pos = np.column_stack((np.cos(result[:, 1]) * result[:, 0] + current_pos[0], np.sin(result[:, 1]) * result[:, 0] + current_pos[1]))
-        obstacle_tiles = coords_to_tile(self, obstacle_pos)
+#        obstacle_tiles = coords_to_tile(self, obstacle_pos)
 
         # index = 0
         # for value in scan_values:
@@ -50,3 +50,72 @@ class Controller:
 
 
 
+
+class Helper:
+    '''
+    basically a wrapper for the data in the file. all this can be static, since the data file is static by defenition
+    these are the functions i would like to have 
+    '''
+    @staticmethod
+    def get_tile_size()-> tuple[int,int]:
+        '''
+        returns the x,y size of a sinlge tile (i think the was the robot size)
+        '''
+        pass
+
+    @staticmethod
+    def get_world_arr_shape()->tuple[int, int]:
+        '''
+        return the shape of the world arr
+        '''
+        pass
+
+    @staticmethod
+    def world_to_tile(coord_array: np.ndarray) -> np.ndarray:
+        '''
+        take an array of xy coords, and returns a mask
+        '''
+        pass
+
+    @staticmethod
+    def world_to_tile_single(single_coord: np.ndarray) -> tuple[int,int]:
+        '''
+        take a sigle xy point ( arr of shapw (2,)) and return the corresponding tile 
+        '''
+        pass
+
+    @staticmethod
+    def tile_to_world_single(tile:tuple[int,int]) -> np.ndarray:
+        '''
+        bla bla
+        '''
+        pass
+
+    @staticmethod
+    def tile_to_world(tile_arr: np.ndarray) -> np.ndarray:
+        '''
+        bla bla bla
+        '''
+        pass
+
+    @staticmethod
+    def get_goal_tile()-> tuple[int,int]:
+        pass
+
+    @staticmethod
+    def get_total_map_dim_in_meter() -> tuple[float, float]:
+        pass
+
+    @staticmethod
+    def get_mask_from_lidar_data_raw(raw_lidar_data:np.ndarray)-> np.ndarray:
+        '''
+        returns a mask of the seen obstacles, obstacle -> True, else False
+        
+        '''
+
+    @staticmethod
+    def get_starting_tile()->tuple[int,int]:
+        '''
+        return the tile at the very beginning
+        '''
+        pass
