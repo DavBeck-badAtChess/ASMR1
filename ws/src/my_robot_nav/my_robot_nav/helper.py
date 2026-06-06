@@ -118,9 +118,9 @@ class Helper:
         arr = Helper.tile_to_world(np.array([tile[0], tile[1]]))
         return (arr[0], arr[1])
 
-    @staticmethod
-    def get_goal_tile()-> tuple[int,int]:
-        return Helper.world_to_tile_single(variables.GOAL_COORDS)
+    #@staticmethod
+    #def get_goal_tile()-> tuple[int,int]:
+    #    return Helper.world_to_tile_single(variables.GOAL_COORDS)
 
     @staticmethod
     def get_total_map_dim_in_meter() -> tuple[float, float]:
