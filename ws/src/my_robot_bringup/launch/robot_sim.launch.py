@@ -29,6 +29,24 @@ def generate_launch_description():
         ExecuteProcess(
             cmd=['gz', 'sim', '-r', world_path],
         ),
+        ExecuteProcess(
+            cmd=[
+            "ros2", "run", "tf2_ros", "static_transform_publisher",
+            "0", "0", "0",
+            "0", "0", "0",
+            "map", "odom"
+            ],
+            output="screen"
+        ),
+        ExecuteProcess(
+            cmd=[
+            "ros2", "run", "tf2_ros", "static_transform_publisher",
+            "0", "0", "0",
+            "0", "0", "0",
+            "odom", "base_link"
+        ],
+        output="screen"
+        ),
         Node(
             package='ros_gz_sim',
             executable='create',

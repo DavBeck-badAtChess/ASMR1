@@ -12,23 +12,25 @@ class OccGrid(Node):
 
     def publish(self):
         msg = OccupancyGrid()
-        msg.header.frame_id = "map"
 
+        msg.header.stamp = self.get_clock().now().to_msg()
+        msg.header.frame_id = "map"
+        
         msg.info.resolution = 1.0
         msg.info.width = 5
         msg.info.height = 5
-
+        
         msg.info.origin.position.x = 0.0
         msg.info.origin.position.y = 0.0
         msg.info.origin.position.z = 0.0
-
+        msg.info.origin.orientation.w = 1.0
+        
         grid = np.zeros((5, 5), dtype=np.int8)
         grid[2, 2] = 100
         grid[1, 3] = 50
-        self.get_logger().info(f'map publish')
-
+        
         msg.data = grid.flatten().tolist()
-
+        
         self.pub.publish(msg)
 
 
