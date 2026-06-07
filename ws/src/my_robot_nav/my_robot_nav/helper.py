@@ -102,7 +102,7 @@ class Helper:
         '''
         bla bla bla
         '''
-        tile_arr_c = tile_arr.copy()
+        tile_arr_c = tile_arr.copy().astype(float)
         shape = Helper.get_world_arr_shape()
         size = Helper.get_tile_size()
         tile_arr_c[:,0] -= shape[0]//2 -size[0]/2 # to position them at the center. not really needet though...
@@ -116,8 +116,8 @@ class Helper:
         '''
         bla bla
         '''
-        arr = Helper.tile_to_world(np.array([tile[0], tile[1]]))
-        return (arr[0], arr[1])
+        arr = Helper.tile_to_world(np.array([[tile[0], tile[1]],[tile[0], tile[1]]]))
+        return (arr[0,0], arr[0,1])
 
     #@staticmethod
     #def get_goal_tile()-> tuple[int,int]:

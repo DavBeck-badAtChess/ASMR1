@@ -18,6 +18,7 @@ class PointNavigator:
 
     MAX_LIN_SPEED:float = 1.0
     MAX_ROT_SPEED:float = 1.0
+    CLOSNESS_THREASHOLD:float = 0.2
 
     @property
     def _ready_to_tick(self)-> bool:
@@ -49,7 +50,7 @@ class PointNavigator:
 
 
     def _check_if_waypoint_is_reached(self):
-        self._waypoint_reached = np.linalg.norm(self._current_waypoint_local) < self.CLOSNESS_THREASHOLD
+        self._waypoint_reached = np.linalg.norm(self._current_waypoint_local) < PointNavigator.CLOSNESS_THREASHOLD
 
 
     def _update_local_waypoint(self):
@@ -66,8 +67,8 @@ class PointNavigator:
 
         '''
         favor_heading = np.arctan2(self._current_waypoint_local[1],self._current_waypoint_local[0])
-        current_heading = self._globa_to_local_tf.tf.transform.rotation.z
-        heading_closeness = np.abs(np.cos(favor_heading - current_heading),0)
+        current_heading = self._globa_to_local_tf.transform.rotation.z
+        heading_closeness = max(np.cos(favor_heading - current_heading),0)
 
         rot_acc = (1 - heading_closeness) * self._rot_acc # if orth, rotate faster
         lin_acc = (heading_closeness-0.5) * self._lin_acc # if orth, slow down
@@ -94,7 +95,7 @@ class PointNavigator:
 
         self._update_local_waypoint()
         self._update_action_goal()
-        self._check_if_goal_is_reached()
+        self._check_if_waypoint_is_reached()
 
 
 
@@ -115,6 +116,18 @@ class PointNavigator:
     def set_globa_to_local_tf(self, tf ):
         self._globa_to_local_tf = tf 
 
+    def _make_local(self, global_point:np.ndarray)->np.ndarray:
+        '''
+        takes a global point, and converts into local coords.
+        '''
+        point_glob = PointStamped()
+        point_glob.header.frame_id = "odom"  # this point is global
+        point_glob.header.stamp = rclpy.time.Time() # right now
+        point_glob.point.x = global_point[0]
+        point_glob.point.y = global_point[1]
+        point_glob.point.z = 0
+        point_local = tf2_geometry_msgs.do_transform_point(point_glob, self._globa_to_local_tf)
+        return np.array([point_local.point.x,point_local.point.y])
 
     @property
     def waypoint_reached(self)-> bool:

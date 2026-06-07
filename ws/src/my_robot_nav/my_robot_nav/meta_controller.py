@@ -172,7 +172,7 @@ class MetaController(Node):
         if self._point_navigator.waypoint_reached:
             self._current_tile = self._solver.get_next_tile(tile_position=self._current_tile)
             self.get_logger().info(f'current tile = {self._current_tile}')
-            self._point_navigator.drive_to(waypoint= Helper.tile_to_world_single(self._current_tile))
+            self._point_navigator.set_new_waypoint(waypoint= Helper.tile_to_world_single(self._current_tile))
             self._replot_flag = True
 
         self.get_logger().info(f'point nav ready to tik= {self._point_navigator._ready_to_tick}')
