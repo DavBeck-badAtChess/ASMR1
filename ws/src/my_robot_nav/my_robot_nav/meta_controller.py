@@ -137,6 +137,8 @@ class MetaController(Node):
         '''
         if self._latest_lidar_msg is None: return
         msg = self._latest_lidar_msg
+        
+        self.get_logger().info(f'lidar rang {np.max(np.array(msg.ranges))}')
         self._replot_flag = self._solver.account_for_geometry(Helper.get_tiles_from_lidar_data_raw(raw_lidar_data=np.array(msg.ranges)))
         
        # self._latest_lidar_msg = None

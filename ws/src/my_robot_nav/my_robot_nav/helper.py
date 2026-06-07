@@ -1,6 +1,6 @@
 import my_robot_nav.variables as variables
-import variables as variables
-#import numpy as np
+#import variables as variables
+import numpy as np
 
 
 
@@ -79,6 +79,8 @@ class Helper:
     @staticmethod
     def get_tiles_from_lidar_data_raw(raw_lidar_data: np.ndarray) -> np.ndarray:
         mask = ~np.isnan(raw_lidar_data)
+        mask_inf = ~np.isinf(raw_lidar_data)
+        mask &= mask_inf
         dist = raw_lidar_data[mask]
         ang = np.linspace(
             variables.LIDAR_MIN_ANG,
@@ -100,13 +102,17 @@ class Helper:
     
 
 # test_scan = np.linspace(0,4, 36)
+# test_scan[5] = np.inf
+# print(test_scan)
 # t = Helper.get_tiles_from_lidar_data_raw(test_scan)
 
 # print("shape", Helper.get_world_arr_shape())
 # print("tile_size", Helper.get_tile_size())
 
 # print("max tile", np.max(t))
+# print("tile sh", t.shape)
 # print(np.max(t))
+# print(t)
 """ 
 print(Helper.get_tile_size())
 test = np.linspace(0,3,360)
