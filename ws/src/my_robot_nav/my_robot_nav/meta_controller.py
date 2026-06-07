@@ -3,12 +3,6 @@ import sys
 sys.dont_write_bytecode = True
 import numpy as np 
 from enum import Enum
-from my_robot_nav.map_test import OccGrid
-
-from my_robot_nav.maze_solver import Solver
-from my_robot_nav.helper import Helper
-from my_robot_nav.point_navigator import PointNavigator
-
 
 import rclpy
 import tf2_ros
@@ -52,8 +46,6 @@ def main(args=None) -> None:
     # Destroy the node explicitly
     # (optional - otherwise it will be done automatically
     # when the garbage collector destroys the node object)
-    meta_c.destroy_node()
-    rclpy.shutdown()
 
 if __name__ == '__main__':
     main()
