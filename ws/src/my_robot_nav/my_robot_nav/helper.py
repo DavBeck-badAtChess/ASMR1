@@ -1,5 +1,5 @@
-#import my_robot_nav.variables as variables
-import variables as variables
+import my_robot_nav.variables as variables
+#import variables as variables
 import numpy as np
 
 @staticmethod
@@ -143,7 +143,11 @@ class Helper:
         coords = np.stack([dir_x, dir_y], axis=1)
         coords[:,0] *= compund[:,0]
         coords[:,1] *= compund[:,0]
-        return Helper.world_to_tile(coords)
+        tiles = Helper.world_to_tile(coords)
+        mask = np.zeros(Helper.get_world_arr_shape(),dtype bool)
+        mask[tiles] = True
+        return mask
+        #return Helper.world_to_tile(coords)
 
     @staticmethod
     def get_starting_tile()->tuple[int,int]:

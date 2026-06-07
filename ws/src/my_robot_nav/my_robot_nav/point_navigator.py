@@ -143,9 +143,9 @@ class PointNavigator(Node):
         '''
         try:
             self._globa_to_local_tf = self._tf_buffer.lookup_transform(
-                "base_link",   # target frame
-                #"odom",   # source frame
+                #"base_link",   # target frame
                 "odom",   # source frame
+                "map",   # source frame
                 rclpy.time.Time()   # time
             )
         except tf2_ros.LookupException:
