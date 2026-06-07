@@ -137,7 +137,7 @@ class MetaController(Node):
 
 def main(args=None) -> None:
     rclpy.init(args=args)
-    node = MetaController()
+    node = MetaController('meta_controller')
     executor = MultiThreadedExecutor()
     executor.add_node(node)
     try:
