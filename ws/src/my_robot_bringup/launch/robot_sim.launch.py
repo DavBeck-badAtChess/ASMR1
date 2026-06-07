@@ -86,13 +86,6 @@ def generate_launch_description():
             }],
             output='screen'
         ),
-#
-        Node(# start the point navigator
-            package='my_robot_nav',
-            executable='point_navigator',
-            name='point_navigator',
-            output='screen'
-        ),
         
         Node(# start the point navigator
             package='my_robot_nav',
@@ -101,17 +94,4 @@ def generate_launch_description():
             output='screen'
         ),
 
-        #  Node(# start obstacle nav
-        #     package='my_robot_nav',
-        #     executable='obstacle_nav',
-        #     name='obstacle_nav',
-        #     output='screen'
-        # ),
-        
-        #Node(# start the point navigator
-        #    package='my_robot_nav',
-        #    executable='map_test',
-        #    name='occ_grid',
-        #    output='screen'
-        #),
     ])
