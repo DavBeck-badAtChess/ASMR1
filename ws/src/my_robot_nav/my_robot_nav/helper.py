@@ -93,8 +93,8 @@ class Helper:
         take a sigle xy point ( arr of shapw (2,)) and return the corresponding tile 
         '''
         s = Helper.get_world_arr_shape()
-        i = np.round(single_coord[0] / variables.ROBOT_WIDTH) + s[0] // 2
-        j = np.round(single_coord[1] / variables.ROBOT_WIDTH) + s[1] // 2
+        i = int(np.round(single_coord[0] / variables.ROBOT_WIDTH) + s[0] // 2)
+        j = int(np.round(single_coord[1] / variables.ROBOT_WIDTH) + s[1] // 2)
         return (i,j)
 
     @staticmethod

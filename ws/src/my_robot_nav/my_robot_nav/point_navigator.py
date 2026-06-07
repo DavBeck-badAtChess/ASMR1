@@ -25,7 +25,7 @@ class PointNavigator:
         many things are assumed in order to tick. this is a quick debug ish function 
         '''
         if self._globa_to_local_tf is None: return False
-        if self._current_waypoint_local is None: return False
+        if self._current_waypoint is None: return False
         return True
 
 
@@ -45,7 +45,7 @@ class PointNavigator:
         self._goal.angular_z = 0.0
         self._globa_to_local_tf = None
 
-        self._waypoint_reached = False
+        self._waypoint_reached = True
 
 
     def _check_if_waypoint_is_reached(self):
