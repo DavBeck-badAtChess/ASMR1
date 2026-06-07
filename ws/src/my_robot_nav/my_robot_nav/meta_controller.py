@@ -26,15 +26,19 @@ class MetaController(Node):
     this listens to all the nodes of interest, and commands the output (ie uses nodes to manipulate).
     this is does not directly send any signals, it is just a controller.
     '''
+    TICK_HZ = 10.0
 
-    def __int__(self):
-        super().__init__('meta_controller')
+    def __init__(self, name:str):
+        super().__init__(name)
+        self.get_logger().info('meta_controller innit')
         self._goal_tile : int[int,int]  = (10,10)# TODO i need the goal thingy to verify this
         self._current_tile  :int[int,int]    = Helper.get_starting_tile()
 
         self._solver    : Solver     = Solver(maze_shape=Helper.get_world_arr_shape(), goal_tile= self._goal_tile)
         self._plotter   : OccGrid    = OccGrid(map_dims_in_meter=Helper.get_total_map_dim_in_meter())
+        self.get_logger().info('before point nav')
         self._point_navigator   :PointNavigator  = PointNavigator()
+        self.get_logger().info('after point nav')
 
         self._goal_msg_recieved:bool = False
         self._goal_subscription = None
@@ -42,12 +46,13 @@ class MetaController(Node):
 
         self._latest_lidar_msg = None
         self._lidar_subscription = None
+        self.get_logger().info('before lidar sub')
         self._create_lidar_sub()
 
         self._replot_flag : bool = True
 
         self._timer = self.create_timer(
-            1.0 / self.TICK_HZ, self._tick
+            1.0 / MetaController.TICK_HZ, self._tick
         )
 
 
@@ -118,6 +123,7 @@ class MetaController(Node):
         '''
         here i need to define all the actions, that need to be done in one tick. this needs to be driven by a clock.
         '''
+        self.get_logger().info('tick')
         if not self._ready_to_tick: return
 
         if self._goal_msg_recieved:
