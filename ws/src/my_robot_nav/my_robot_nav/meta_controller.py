@@ -97,6 +97,7 @@ class MetaController(Node):
         this is the loop that keeps everything running. so everything is run of the provided controllers clock.
         # TODO this should realy look two steps ahead...
         '''
+        self._current_tile = (int(self._current_tile[0]), int(self._current_tile[1]))
         next_waypoint_tile: tuple[int,int] = self._solver.get_next_tile(tile_position=self._current_tile)
         next_waypoint = Helper.tile_to_world_single(tile=next_waypoint_tile)
         self._drive_to(waypoint=next_waypoint, callback= self._on_checkpoint_reached)
