@@ -18,7 +18,7 @@ from rclpy.node import Node
 from geometry_msgs.msg import PointStamped
 from sensor_msgs.msg import LaserScan
 from my_robot_interfaces.action import SetVelocity # this is the action defined by the provided movement controller, the topic is /set_velocity
-
+from rclpy.executors import MultiThreadedExecutor
 
 class MetaController(Node):
     '''
@@ -27,80 +27,124 @@ class MetaController(Node):
     this is does not directly send any signals, it is just a controller.
     '''
 
-    def __init__(self):
+    def __int__(self):
         super().__init__('meta_controller')
-        '''
-        build the solver to feed the 
-        '''
-        self._goal_tile : int[int,int] = (10,10)# i need the goal thingy to verify this
-        self._solver:Solver = Solver(maze_shape=Helper.get_world_arr_shape(), goal_tile= self._goal_tile)
-        self._plotter:OccGrid = OccGrid(map_dims_in_meter=Helper.get_total_map_dim_in_meter())
-        self.get_logger().info('meta c now building point nav')
-        self._point_navigator:PointNavigator = PointNavigator()
-        self.get_logger().info('meta c after building point nav')
-        self._current_tile: int[int,int] = Helper.get_starting_tile()
+        self._goal_tile : int[int,int]  = (10,10)# TODO i need the goal thingy to verify this
+        self._current_tile  :int[int,int]    = Helper.get_starting_tile()
+
+        self._solver    : Solver     = Solver(maze_shape=Helper.get_world_arr_shape(), goal_tile= self._goal_tile)
+        self._plotter   : OccGrid    = OccGrid(map_dims_in_meter=Helper.get_total_map_dim_in_meter())
+        self._point_navigator   :PointNavigator  = PointNavigator()
+
+        self._goal_msg_recieved:bool = False
+        self._goal_subscription = None
+        self._create_goal_sub()
+
+        self._latest_lidar_msg = None
+        self._lidar_subscription = None
+        self._create_lidar_sub()
+
+        self._replot_flag : bool = True
+
+        self._timer = self.create_timer(
+            1.0 / self.TICK_HZ, self._tick
+        )
 
 
+    # goal node stuff ======================================================================================================
+    def _on_goal_reached_send(self, msg):
+        '''
+        just set the state.
+        '''
+        self._goal_msg_recieved = True
+    
+    def _create_goal_sub(self):
+        '''
+        TODO
+        '''
+        pass
+
+    # lidar stuff ======================================================================================================
+    def _create_lidar_sub(self):
         self._lidar_subscription = self.create_subscription(
             LaserScan,
             '/scan', 
-            self._on_lidar_data, 
-            10)
-        self._lidar_subscription # prevent unused variable warning
+            self._on_lidar_send, 
+            5)
 
-        i = 0
-        while i < 5:
-            rclpy.spin_once(self, timeout_sec=1.0)
-            i += 1
-        # this will kick of the driving.
-        self._on_checkpoint_reached()
 
-    def _on_goal_reached(self):
-        self._point_navigator.kill()
-    
-    def _on_checkpoint_reached(self):
+    def _on_lidar_send(self, msg):
         '''
-        figure out the next step (this causes the update cascade in the maze).
-        this is the loop that keeps everything running. so everything is run of the provided controllers clock.
-        # TODO this should realy look two steps ahead...
+        just store the latest msg. this is then used in the tick
         '''
-        self.get_logger().info('_on_checkpoint_reached meta c')
-        #next_waypoint_tile: tuple[int,int] = self._solver.get_next_tile(tile_position=self._current_tile)
-        next_waypoint_tile = np.array([10.0,10.0])
-        self.get_logger().info('_on_checkpoint_reached meta c got next tile')
-        next_waypoint = Helper.tile_to_world_single(tile=next_waypoint_tile)
-        
-        self.get_logger().info('drive to send to point nav meta c')
-        self._point_navigator.drive_to(waypoint=next_waypoint, callback= self._on_checkpoint_reached)
+        self._latest_lidar_msg = msg
 
-    def _replot_map(self):
+
+    def _synch_map(self):
         '''
-        replot_map
+        call this to synch the vis map.
+        use up the flag here
         '''
+        if not self._replot_flag: return
         mc = self._solver.informational_map.copy()
        # mc[self._current_tile] = 2
         self._plotter.display(mc)
+        self._replot_flag = False
 
-    def _on_lidar_data(self,msg):
-        '''
-        i assume, that everything that is seen here is not needed emidietly. ie the robot can see one tile ahead.
-        '''
-        self.get_logger().info(
-         f"lidar data caught by meta controller"
-        )
-        new_information = self._solver.account_for_geometry(Helper.get_tiles_from_lidar_data_raw(raw_lidar_data=np.array(msg.ranges)))
-        if new_information: self._replot_map()
 
+    def _synch_env_with_lidar_data(self):
+        '''
+        take the lidar data, relan the course, and then determain the next goal.
+        use the message up.
+        '''
+        if self._latest_lidar_msg is None: return
+        msg = self._latest_lidar_msg
+        self._replot_flag = self._solver.account_for_geometry(Helper.get_tiles_from_lidar_data_raw(raw_lidar_data=np.array(msg.ranges)))
+        self._latest_lidar_msg = None
+
+
+    # tick stuff ======================================================================================================
+    @property
+    def _ready_to_tick(self)-> bool:
+        '''
+        many things are assumed in order to tick. this is a quick debug ish function 
+        '''
+        if self._goal_tile is None: return False
+        if self._current_tile is None: return False
+        return True
+
+
+    def _tick(self):
+        '''
+        here i need to define all the actions, that need to be done in one tick. this needs to be driven by a clock.
+        '''
+        if not self._ready_to_tick: return
+
+        if self._goal_msg_recieved:
+            self._point_navigator.kill()
+            return
+
+        self._synch_env_with_lidar_data()
+        self._synch_map()
+
+        if self._point_navigator.waypoint_reached:
+            self._current_tile = self._solver.get_next_tile(tile_position=self._current_tile)
+            self._point_navigator.drive_to(waypoint= Helper.tile_to_world_single(self._current_tile))
+            self._replot_flag = True
+
+        self._point_navigator.tick()
 
 
 def main(args=None) -> None:
     rclpy.init(args=args)
-    meta_c = MetaController()
-    rclpy.spin(meta_c)
-    # Destroy the node explicitly
-    # (optional - otherwise it will be done automatically
-    # when the garbage collector destroys the node object)
-    meta_c.destroy_node()
+    node = MetaController()
+    executor = MultiThreadedExecutor()
+    executor.add_node(node)
+    try:
+        executor.spin()
+    except KeyboardInterrupt:
+        pass
+    node.destroy_node()
     rclpy.shutdown()
 
 if __name__ == '__main__':
