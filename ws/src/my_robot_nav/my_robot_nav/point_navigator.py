@@ -45,9 +45,9 @@ class PointNavigator(Node):
         self._current_rot_acc:float = 0
     
         self._goal = SetVelocity.Goal()
-        self._globa_to_local_tf = None
+        self._global_to_local_tf = None
 
-        self._goal_reached = True
+        self._waypoint_reached = True
 
         self._curr_callback:callable = None
 
@@ -55,9 +55,9 @@ class PointNavigator(Node):
         while not self._movement_client.wait_for_server(timeout_sec=1.0):
             self.get_logger().info('service set velocity not available, waiting again...')
 
-        while self._globa_to_local_tf is None:
+        while self._global_to_local_tf is None:
             # only start once the tf is usable
-            self._update_globa_to_local_tf()
+            self._update_global_to_local_tf()
             rclpy.spin_once(self, timeout_sec=1.0)
 
         self.get_logger().info('point_navigator now running')
@@ -67,7 +67,7 @@ class PointNavigator(Node):
         stop it all. 
         call once the goal is reached
         '''
-        self._goal_reached = True
+        self._waypoint_reached = True
         self._curr_callback = None
         self._goal.linear_x = 0
         self._goal.angular_z = 0
@@ -80,7 +80,7 @@ class PointNavigator(Node):
         '''
         self._current_waypoint = coord
         self._curr_callback = callback
-        self._goal_reached = False
+        self._waypoint_reached = False
         self._curr_callback = self._curr_callback
 
     def _on_setvel_feedback(self,feedback_msg):
@@ -90,9 +90,9 @@ class PointNavigator(Node):
         the assigned states are not reached -> do nothing
         else get new states to assign and do so
         '''
-        if self._goal_reached: return
-        if self._check_if_goal_is_reached():
-            self._goal_reached = True
+        if self._waypoint_reached: return
+        if self._check_if_waypoint_reached():
+            self._waypoint_reached = True
         fb = feedback_msg.feedback
         if np.abs(self._goal.linear_x -fb.current_linear_x) > PointNavigator.CLOSNESS_ang_renameme:
             return
@@ -124,25 +124,25 @@ class PointNavigator(Node):
         self._goal.angular_z += next_acc
         self._current_rot_acc = next_acc
 
-    def _check_if_goal_is_reached(self)->bool:
+    def _check_if_waypoint_reached(self)->bool:
         return np.linalg.norm(self._current_waypoint_local) < self.CLOSNESS_THREASHOLD
 
     def _update_headings(self):
         '''
         update the tf and all the stuff the others depend on 
         '''
-        self._update_globa_to_local_tf()
+        self._update_global_to_local_tf()
 
         self._current_heading = self._get_global_heading()
         self._current_waypoint_local = self._make_local(self._current_waypoint)
         self._favor_heading = np.arctan2(self._current_waypoint_local[1],self._current_waypoint_local[0])
 
-    def _update_globa_to_local_tf(self):
+    def _update_global_to_local_tf(self):
         '''
         provides the tf to transform global into local
         '''
         try:
-            self._globa_to_local_tf = self._tf_buffer.lookup_transform(
+            self._global_to_local_tf = self._tf_buffer.lookup_transform(
                 #"base_link",   # target frame
                 "odom",   # source frame
                 "map",   # source frame
@@ -161,11 +161,11 @@ class PointNavigator(Node):
         point_glob.point.x = global_point[0]
         point_glob.point.y = global_point[1]
         point_glob.point.z = 0
-        point_local = tf2_geometry_msgs.do_transform_point(point_glob, self._globa_to_local_tf)
+        point_local = tf2_geometry_msgs.do_transform_point(point_glob, self._global_to_local_tf)
         return np.array([point_local.point.x,point_local.point.y])
 
     def _get_global_heading(self)->float:
-        return  self._globa_to_local_tf.tf.transform.rotation.z
+        return  self._global_to_local_tf.tf.transform.rotation.z
 
 
 def main(args=None):
