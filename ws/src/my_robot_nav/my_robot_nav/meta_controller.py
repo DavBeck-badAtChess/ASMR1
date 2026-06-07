@@ -12,6 +12,8 @@ from rclpy.action import ActionClient
 from rclpy.node import Node
 from geometry_msgs.msg import PointStamped
 from sensor_msgs.msg import LaserScan
+from nav_msgs.msg import Odometry
+from my_robot_perception.odom_utils import get_position
 from my_robot_interfaces.action import SetVelocity # this is the action defined by the provided movement controller, the topic is /set_velocity
 
 
@@ -27,6 +29,8 @@ class MetaController(Node):
         '''
         build the solver to feed the 
         '''
+        self._robot_pos: tuple = None
+
 
         # subscribing to lidar
         self._lidar_subscription = self.create_subscription(
@@ -58,7 +62,18 @@ class MetaController(Node):
         msg.angular_z = 0.0
 
         self._movement_client.send_goal_async(msg, self._temporary_feedback_function)
+
+        # subscribe to /odom
+        self._odom_subscription = self.create_subscription(
+            Odometry,
+            '/odom',
+            self._on_odom_data,
+            10
+        )
         
+    def _on_odom_data(self, msg):
+        self._robot_pos = get_position(msg)
+        self.get_logger().info(f"getting odom data of robot: {self._robot_pos}")
 
     def _on_lidar_data(self, msg):
         # raw_lidar_data = np.array(msg.ranges)
@@ -71,6 +86,8 @@ class MetaController(Node):
     def _temporary_feedback_function(self, feedback_msg):
         # self.get_logger().info('calling  the set_velocity-server')
         pass
+
+# def get_robot_position
 
 def main(args=None) -> None:
     rclpy.init(args=args)
