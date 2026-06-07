@@ -30,19 +30,16 @@ class MetaController(Node):
 
     def __init__(self, name:str):
         super().__init__(name)
-        self.get_logger().info('meta_controller innit')
         self._tf_buffer = tf2_ros.Buffer()
         self._tf_listener = tf2_ros.TransformListener(self._tf_buffer, self)
 
 
-        self._goal_tile : int[int,int]  = (10,10)# TODO i need the goal thingy to verify this
+        self._goal_tile : int[int,int]  = (100,150)# TODO i need the goal thingy to verify this
         self._current_tile  :int[int,int]    = Helper.get_starting_tile()
 
         self._solver    : Solver     = Solver(maze_shape=Helper.get_world_arr_shape(), goal_tile= self._goal_tile)
         self._plotter   : OccGrid    = OccGrid(map_dims_in_meter=Helper.get_total_map_dim_in_meter())
-        self.get_logger().info('before point nav')
         self._point_navigator   :PointNavigator  = PointNavigator()
-        self.get_logger().info('after point nav')
 
         self._goal_msg_recieved:bool = False
         self._goal_subscription = None
@@ -50,7 +47,6 @@ class MetaController(Node):
 
         self._latest_lidar_msg = None
         self._lidar_subscription = None
-        self.get_logger().info('before lidar sub')
         self._create_lidar_sub()
 
         self._replot_flag : bool = True
@@ -69,7 +65,6 @@ class MetaController(Node):
     # movement node stuff ======================================================================================================
     def _send_action_goal(self):
         self._movement_client.send_goal_async(self._point_navigator.action_goal)
-        self.get_logger().info(f'action goal send {self._point_navigator.action_goal}')
 
     # goal node stuff ======================================================================================================
     def _on_goal_reached_send(self, msg):
@@ -82,16 +77,15 @@ class MetaController(Node):
         '''
         provides the tf to transform global into local
         '''
-        self.get_logger().info('trying to innit tf')
         try:
            tf = self._tf_buffer.lookup_transform(
                "odom",   # source frame
-               "map",   # source frame
+               "base_link",   # source frame
                 rclpy.time.Time(),   # latest available transform
                timeout=rclpy.duration.Duration(seconds=0.2)
            )
            self._point_navigator.set_globa_to_local_tf(tf)
-           self.get_logger().info('innited')
+           self.get_logger().info(f'tf reset succsessfully{tf}')
         except tf2_ros.LookupException:
             return None
         
@@ -123,9 +117,15 @@ class MetaController(Node):
         call this to synch the vis map.
         use up the flag here
         '''
-        if not self._replot_flag: return
+        #if not self._replot_flag: return
         mc = self._solver.informational_map.copy()
-       # mc[self._current_tile] = 2
+        mc[self._current_tile] =- 40
+        msg = self._latest_lidar_msg
+        if msg is None: return 
+
+        ass = Helper.get_tiles_from_lidar_data_raw(raw_lidar_data=np.array(msg.ranges))
+        self.get_logger().info(f'lidar {ass}')
+        mc[ass] = 5
         self._plotter.display(mc)
         self._replot_flag = False
 
@@ -138,7 +138,8 @@ class MetaController(Node):
         if self._latest_lidar_msg is None: return
         msg = self._latest_lidar_msg
         self._replot_flag = self._solver.account_for_geometry(Helper.get_tiles_from_lidar_data_raw(raw_lidar_data=np.array(msg.ranges)))
-        self._latest_lidar_msg = None
+        
+       # self._latest_lidar_msg = None
 
 
     # tick stuff ======================================================================================================
@@ -147,8 +148,6 @@ class MetaController(Node):
         '''
         many things are assumed in order to tick. this is a quick debug ish function 
         '''
-        self.get_logger().info(f'current tile = {self._current_tile}')
-        self.get_logger().info(f'goal tile = {self._goal_tile}')
         if self._goal_tile is None: return False
         if self._current_tile is None: return False
         return True
@@ -157,12 +156,10 @@ class MetaController(Node):
         '''
         here i need to define all the actions, that need to be done in one tick. this needs to be driven by a clock.
         '''
-        self.get_logger().info('tick')
         if not self._ready_to_tick: return
 
         if self._goal_msg_recieved:
             self._point_navigator.kill()
-            self.get_logger().info('goal rec')
             return
 
         self._synch_env_with_lidar_data()
@@ -171,13 +168,17 @@ class MetaController(Node):
         self._update_globa_to_local_tf_of_point_nav()
         if self._point_navigator.waypoint_reached:
             self._current_tile = self._solver.get_next_tile(tile_position=self._current_tile)
-            self.get_logger().info(f'current tile = {self._current_tile}')
             self._point_navigator.set_new_waypoint(waypoint= Helper.tile_to_world_single(self._current_tile))
             self._replot_flag = True
 
-        self.get_logger().info(f'point nav ready to tik= {self._point_navigator._ready_to_tick}')
         self._point_navigator.tick()
         self._send_action_goal()
+
+        self.get_logger().info(f'rotation {self._point_navigator._get_local_heading()}')
+        self.get_logger().info(f'local wp {self._point_navigator._current_waypoint_local}')
+        self.get_logger().info(f'local wp {self._point_navigator._current_waypoint_local}')
+        
+
 
 
 def main(args=None) -> None:

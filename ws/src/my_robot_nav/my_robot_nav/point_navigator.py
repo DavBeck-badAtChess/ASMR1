@@ -11,7 +11,7 @@ import tf2_geometry_msgs  # noqa: F401  (registers transform support for PointSt
 from rclpy.action import ActionClient
 from geometry_msgs.msg import PointStamped
 from my_robot_interfaces.action import SetVelocity # this is the action defined by the provided movement controller, the topic is /set_velocity
-
+#import tf_transformations
 
 
 class PointNavigator:
@@ -38,8 +38,8 @@ class PointNavigator:
         self._current_waypoint_local: np.ndarray = None
         self._current_coord_global: np.ndarray = None #TODO USE THIS LATER
 
-        self._rot_acc:float = 0.5
-        self._lin_acc:float = 0.5
+        self._rot_acc:float = 1.0
+        self._lin_acc:float = 0.2
 
         self._goal = SetVelocity.Goal()
         self._goal.linear_x = 0.0
@@ -60,21 +60,70 @@ class PointNavigator:
         self._current_waypoint_local = self._make_local(self._current_waypoint)
 
 
+    def _get_local_heading(self):
+        dx, dy = self._current_waypoint_local
+
+        target_heading = np.arctan2(dy, dx)
+        #target_heading = np.arctan2( dx, dy)
+        return target_heading
+
+    def _update_action_goal_dis(self):
+
+        current_heading = self._get_local_heading()
+
+        diff = np.arctan2(
+            np.sin(
+                np.arctan2(
+                    self._current_waypoint_local[1],
+                    self._current_waypoint_local[0]
+                ) - current_heading
+            ),
+            np.cos(
+                np.arctan2(
+                    self._current_waypoint_local[1],
+                    self._current_waypoint_local[0]
+                ) - current_heading
+            )
+        )
+
+        rot_speed = np.clip(diff * 1.5, -1.0, 1.0)
+
+        distance = np.linalg.norm(self._current_waypoint_local)
+        lin_speed = np.clip(distance * 0.5, 0, 1.0)
+
+        self._goal.angular_z = rot_speed
+        self._goal.linear_x = lin_speed
+
     def _update_action_goal(self):
         '''
         calculate the next direction, and based on that the sensible speed.
         if the to drive direction is orthogonal, then prioritize rotation, and slow down.
 
         '''
-        favor_heading = np.arctan2(self._current_waypoint_local[1],self._current_waypoint_local[0])
+        favor_heading = np.arctan2(self._current_waypoint_local[0],self._current_waypoint_local[1])
         current_heading = self._globa_to_local_tf.transform.rotation.z
         heading_closeness = max(np.cos(favor_heading - current_heading),0)
 
         rot_acc = (1 - heading_closeness) * self._rot_acc # if orth, rotate faster
         lin_acc = (heading_closeness-0.5) * self._lin_acc # if orth, slow down
+        
         lin_speed = self._goal.linear_x + lin_acc
 
-        if favor_heading < current_heading:
+        diff = np.arctan2(
+            np.sin(
+                np.arctan2(
+                    self._current_waypoint_local[1],
+                    self._current_waypoint_local[0]
+                ) - current_heading
+            ),
+            np.cos(
+                np.arctan2(
+                    self._current_waypoint_local[1],
+                    self._current_waypoint_local[0]
+                ) - current_heading
+            )
+        )
+        if diff < 0:
             rot_speed = self._goal.angular_z - rot_acc
         else:
             rot_speed = self._goal.angular_z + rot_acc
@@ -98,7 +147,6 @@ class PointNavigator:
         self._check_if_waypoint_is_reached()
 
 
-
     def set_new_waypoint(self, waypoint:np.ndarray):
         '''
         set a new waypoint to drive to. no callback or anything
@@ -116,12 +164,14 @@ class PointNavigator:
     def set_globa_to_local_tf(self, tf ):
         self._globa_to_local_tf = tf 
 
+
     def _make_local(self, global_point:np.ndarray)->np.ndarray:
         '''
         takes a global point, and converts into local coords.
         '''
         point_glob = PointStamped()
-        point_glob.header.frame_id = "odom"  # this point is global
+        #point_glob.header.frame_id = "odom"  # this point is global
+        point_glob.header.frame_id = "map"  # this point is global
         point_glob.header.stamp = rclpy.time.Time() # right now
         point_glob.point.x = global_point[0]
         point_glob.point.y = global_point[1]
@@ -129,13 +179,15 @@ class PointNavigator:
         point_local = tf2_geometry_msgs.do_transform_point(point_glob, self._globa_to_local_tf)
         return np.array([point_local.point.x,point_local.point.y])
 
+
     @property
     def waypoint_reached(self)-> bool:
         '''
         return if the waypoint was reached
         '''
         return self._waypoint_reached
-    
+
+
     @property
     def action_goal(self):
         return self._goal

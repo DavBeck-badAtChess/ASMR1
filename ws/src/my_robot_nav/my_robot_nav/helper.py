@@ -83,8 +83,9 @@ class Helper:
         take an array of xy coords, and returns a mask
         '''
         s = Helper.get_world_arr_shape()
-        i = np.round(coord_array[0] / variables.ROBOT_WIDTH) + s[0] // 2
-        j = np.round(coord_array[1] / variables.ROBOT_WIDTH) + s[1] // 2
+        i = np.round(coord_array[:,0] / Helper.get_tile_size()[0]) + s[0] // 2
+        j = np.round(coord_array[:,1] / Helper.get_tile_size()[1]) + s[1] // 2
+        #print("i shape", i.shape)
         return np.stack([i,j], axis=1).astype(int)
 
     @staticmethod
@@ -119,10 +120,6 @@ class Helper:
         arr = Helper.tile_to_world(np.array([[tile[0], tile[1]],[tile[0], tile[1]]]))
         return (arr[0,0], arr[0,1])
 
-    #@staticmethod
-    #def get_goal_tile()-> tuple[int,int]:
-    #    return Helper.world_to_tile_single(variables.GOAL_COORDS)
-
     @staticmethod
     def get_total_map_dim_in_meter() -> tuple[float, float]:
         shape = Helper.get_world_arr_shape()
@@ -130,19 +127,21 @@ class Helper:
         return (shape[0] * size[0],shape[1] * size[1])
 
     @staticmethod
-    def get_tiles_from_lidar_data_raw(raw_lidar_data:np.ndarray)-> np.ndarray:
-        '''
-        returns a mask of the seen obstacles, obstacle -> True, else False
-        first match the messurements to the angles, then throw out nan, then generate the dir vecs, ten mult with the messurements. 
-        '''
-        ang = np.linspace(start=variables.LIDAR_MIN_ANG, stop=variables.LIDAR_MAX_ANG, num= raw_lidar_data.shape[0])
-        compund = np.stack([ang, raw_lidar_data] , axis= 1)
-        compund = compund[~np.isnan(compund[:,1])]
-        dir_x = np.cos(compund[:, 0])
-        dir_y = np.sin(compund[:, 0])
-        coords = np.stack([dir_x, dir_y], axis=1)
-        coords[:,0] *= compund[:,0]
-        coords[:,1] *= compund[:,0]
+    def get_tiles_from_lidar_data_raw(raw_lidar_data: np.ndarray) -> np.ndarray:
+        mask = ~np.isnan(raw_lidar_data)
+        dist = raw_lidar_data[mask]
+        ang = np.linspace(
+            variables.LIDAR_MIN_ANG,
+            variables.LIDAR_MAX_ANG,
+            raw_lidar_data.shape[0]
+        )[mask]
+
+        #ang *= np.pi/180
+        coords = np.column_stack([
+            np.cos(ang) * dist,
+            np.sin(ang) * dist
+        ])
+        #return coords
         return Helper.world_to_tile(coords)
 
     @staticmethod
@@ -152,7 +151,8 @@ class Helper:
         '''
         return Helper.world_to_tile_single(variables.START_COORDS)
     
-
-
-# test = np.linspace(0,36,36)
-# Helper.get_mask_from_lidar_data_raw(test)
+""" 
+print(Helper.get_tile_size())
+test = np.linspace(0,3,360)
+print(Helper.get_tiles_from_lidar_data_raw(test))
+ """
