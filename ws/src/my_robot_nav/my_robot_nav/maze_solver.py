@@ -107,7 +107,7 @@ class Solver:
         target_tile = self._figure_out_next_step(position_tile=tile_position)
         return target_tile
 
-    def account_for_geometry(self, new_geometry_mask:np.ndarray):
+    def account_for_geometry(self, new_geometry_tiles:np.ndarray):
         '''
         i assume a correctly sized mask containing all the new geometry as true, rest false.
 
@@ -115,6 +115,8 @@ class Solver:
         obstructed and set the flag accordingly
         '''
         new_information:bool = False
+        new_geometry_mask = np.zeros(self._maze.shape,dtype=bool)
+        new_geometry_mask[new_geometry_tiles] = True
         if np.all(new_geometry_mask | self._maze):# see if new_geometry_mask -> self._maze
             self._maze[~new_geometry_mask] = False
             self._update_soft_maze()

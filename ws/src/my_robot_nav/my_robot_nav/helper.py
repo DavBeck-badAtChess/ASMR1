@@ -130,7 +130,7 @@ class Helper:
         return (shape[0] * size[0],shape[1] * size[1])
 
     @staticmethod
-    def get_mask_from_lidar_data_raw(raw_lidar_data:np.ndarray)-> np.ndarray:
+    def get_tiles_from_lidar_data_raw(raw_lidar_data:np.ndarray)-> np.ndarray:
         '''
         returns a mask of the seen obstacles, obstacle -> True, else False
         first match the messurements to the angles, then throw out nan, then generate the dir vecs, ten mult with the messurements. 
@@ -143,11 +143,7 @@ class Helper:
         coords = np.stack([dir_x, dir_y], axis=1)
         coords[:,0] *= compund[:,0]
         coords[:,1] *= compund[:,0]
-        tiles = Helper.world_to_tile(coords)
-        mask = np.zeros(Helper.get_world_arr_shape(),dtype bool)
-        mask[tiles] = True
-        return mask
-        #return Helper.world_to_tile(coords)
+        return Helper.world_to_tile(coords)
 
     @staticmethod
     def get_starting_tile()->tuple[int,int]:
