@@ -30,6 +30,7 @@ class MetaController(Node):
         build the solver to feed the 
         '''
         self._robot_pos: tuple = None
+        self._goal_pos: tuple = None
 
 
         # subscribing to lidar
@@ -73,7 +74,7 @@ class MetaController(Node):
         
     def _on_odom_data(self, msg):
         self._robot_pos = get_position(msg)
-        self.get_logger().info(f"getting odom data of robot: {self._robot_pos}")
+        # self.get_logger().debug(f"getting odom data of robot: {self._robot_pos}")
 
     def _on_lidar_data(self, msg):
         # raw_lidar_data = np.array(msg.ranges)
@@ -81,13 +82,17 @@ class MetaController(Node):
         pass
 
     def _on_goal_data(self, msg):
-        self.get_logger().info('calling the goal_point-server')
+        self._goal_pos = point_stamp_to_coordinate(msg)
+        self.get_logger().debug(f'Postition of goal set to: {self._goal_pos}')
 
     def _temporary_feedback_function(self, feedback_msg):
         # self.get_logger().info('calling  the set_velocity-server')
         pass
 
-# def get_robot_position
+def point_stamp_to_coordinate(msg) -> tuple:
+    """Return (x, y) position from a PointStamp message."""
+    return (msg.point.x, msg.point.y)
+
 
 def main(args=None) -> None:
     rclpy.init(args=args)
