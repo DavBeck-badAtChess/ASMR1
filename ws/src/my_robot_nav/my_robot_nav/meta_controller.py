@@ -33,6 +33,18 @@ class MetaController(Node):
         build the solver to feed the 
         '''
 
+        self._lidar_subscription = self.create_subscription(
+            LaserScan,
+            '/scan',
+            self._on_lidar_data,
+            10
+        )
+
+    def _on_lidar_data(self, msg):
+        self.get_logger().info(
+            'lidar data caught by meta controller'
+        )
+
 def main(args=None) -> None:
     rclpy.init(args=args)
     meta_c = MetaController()
