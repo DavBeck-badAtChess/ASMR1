@@ -91,13 +91,16 @@ class PointNavigator(Node):
 
 
     def tick(self):
-        self.get_logger().info('tick')
+        self.get_logger().info('tick point nav')
         '''
         update everything.
         first update the local tf
         if possible move on. update the lodal waypoint, use that to update the goal action, set the waypoint reached state
         '''
+        rclpy.spin_once(self)
         self._update_globa_to_local_tf()
+        rclpy.spin_once(self)
+        if not self._ready_to_tick: self.get_logger().info('tf not ready') 
         if not self._ready_to_tick: return 
 
         self._update_local_waypoint()
@@ -129,12 +132,16 @@ class PointNavigator(Node):
         '''
         provides the tf to transform global into local
         '''
+        self.get_logger().info('trying to innit tf')
         try:
             self._globa_to_local_tf = self._tf_buffer.lookup_transform(
                 "odom",   # source frame
                 "map",   # source frame
-                rclpy.time.Time()   # time
+                #"base_link",   # source frame
+                 rclpy.time.Time(),   # latest available transform
+                timeout=rclpy.duration.Duration(seconds=0.2)
             )
+            self.get_logger().info('innited tf')
         except tf2_ros.LookupException:
             return None
 

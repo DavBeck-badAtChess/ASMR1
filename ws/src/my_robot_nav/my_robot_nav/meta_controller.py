@@ -114,6 +114,8 @@ class MetaController(Node):
         '''
         many things are assumed in order to tick. this is a quick debug ish function 
         '''
+        self.get_logger().info(f'current tile = {self._current_tile}')
+        self.get_logger().info(f'goal tile = {self._goal_tile}')
         if self._goal_tile is None: return False
         if self._current_tile is None: return False
         return True
@@ -128,6 +130,7 @@ class MetaController(Node):
 
         if self._goal_msg_recieved:
             self._point_navigator.kill()
+            self.get_logger().info('goal rec')
             return
 
         self._synch_env_with_lidar_data()
@@ -135,6 +138,7 @@ class MetaController(Node):
 
         if self._point_navigator.waypoint_reached:
             self._current_tile = self._solver.get_next_tile(tile_position=self._current_tile)
+            self.get_logger().info(f'current tile = {self._current_tile}')
             self._point_navigator.drive_to(waypoint= Helper.tile_to_world_single(self._current_tile))
             self._replot_flag = True
 
