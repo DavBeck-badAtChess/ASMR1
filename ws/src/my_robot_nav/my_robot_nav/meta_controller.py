@@ -75,6 +75,9 @@ class MetaController(Node):
         '''
         i assume, that everything that is seen here is not needed emidietly. ie the robot can see one tile ahead.
         '''
+        self.get_logger().info(
+         f"lidar data caught by meta controller"
+        )
         new_information = self._solver.account_for_geometry(Helper.get_mask_from_lidar_data_raw(raw_lidar_data=np.array(msg.ranges)))
         if new_information: self._replot_map()
 
