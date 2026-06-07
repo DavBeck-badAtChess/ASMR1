@@ -112,7 +112,7 @@ class PointNavigator(Node):
         use the last adjustment (which should now be the current of the gaol since this is only triggered when that is the case) as the d term 
         no term for slowing down when the goal is close. (yet)
         '''
-        next_acc =np.clip(np.cos(self._favor_heading-self._current_heading)*self._lin_pd[0] - self._current_rot_acc * self._lin_pd[1], -PointNavigator.MAX_LIN_ACC,PointNavigator.MAX_LIN_ACC)
+        next_acc = np.clip(np.cos(self._favor_heading-self._current_heading)*self._lin_pd[0] - self._current_rot_acc * self._lin_pd[1], -PointNavigator.MAX_LIN_ACC,PointNavigator.MAX_LIN_ACC)
         self._goal.linear_x += next_acc
         self._current_lin_acc = next_acc
 
@@ -144,6 +144,7 @@ class PointNavigator(Node):
         try:
             self._globa_to_local_tf = self._tf_buffer.lookup_transform(
                 "base_link",   # target frame
+                #"odom",   # source frame
                 "odom",   # source frame
                 rclpy.time.Time()   # time
             )

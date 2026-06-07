@@ -32,12 +32,12 @@ class MetaController(Node):
         '''
         build the solver to feed the 
         '''
-        self._solver:Solver = Solver(maze_shape=Helper.get_world_arr_shape(), goal_tile= Helper.get_goal_tile())
+        self._goal_tile : int[int,int] = (10,10)# i need the goal thingy to verify this
+        self._solver:Solver = Solver(maze_shape=Helper.get_world_arr_shape(), goal_tile= self._goal_tile)
         self._plotter:OccGrid = OccGrid(map_dims_in_meter=Helper.get_total_map_dim_in_meter())
         self._point_navigator:PointNavigator = PointNavigator()
-
         self._current_tile: int[int,int] = Helper.get_starting_tile()
-        self._goal_tile : int[int,int] = (10,10)# i need the goal thingy to verify this
+
 
         self._lidar_subscription = self.create_subscription(
             LaserScan,

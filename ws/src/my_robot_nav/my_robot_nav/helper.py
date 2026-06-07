@@ -1,4 +1,5 @@
-import my_robot_nav.variables as variables
+#import my_robot_nav.variables as variables
+import variables as variables
 import numpy as np
 
 @staticmethod
@@ -25,16 +26,16 @@ class Controller:
             coords / variables.ROBOT_WIDTH
         ).astype(int) + self._gridsize // 2
 
-    # TODO: Implement lidar evaluation with proper lidar message by changing lidar_scan to type msg and extracting values with scan_values = np.array(msg.ranges)
-    def evaluate_lidar_scan(self, lidar_scan: msg, current_pos: tuple[float, float]):
-        '''
-        Uses lidar's message as well as robot's current position to calculate the position of an obstacle and map it.
-        '''
-        scan_values = np.array(msg.ranges)
-        angles = np.arrange(len(scan_values)) * (360 / len(scan_values)) / 180 * np.pi
-        result = np.column_stack((scan_values, angles))
-        result = result[~np.isnan(result).any(axis=0)]
-        obstacle_pos = np.column_stack((np.cos(result[:, 1]) * result[:, 0] + current_pos[0], np.sin(result[:, 1]) * result[:, 0] + current_pos[1]))
+    # # TODO: Implement lidar evaluation with proper lidar message by changing lidar_scan to type msg and extracting values with scan_values = np.array(msg.ranges)
+    # def evaluate_lidar_scan(self, lidar_scan: msg, current_pos: tuple[float, float]):
+    #     '''
+    #     Uses lidar's message as well as robot's current position to calculate the position of an obstacle and map it.
+    #     '''
+    #     scan_values = np.array(msg.ranges)
+    #     angles = np.arrange(len(scan_values)) * (360 / len(scan_values)) / 180 * np.pi
+    #     result = np.column_stack((scan_values, angles))
+    #     result = result[~np.isnan(result).any(axis=0)]
+    #     obstacle_pos = np.column_stack((np.cos(result[:, 1]) * result[:, 0] + current_pos[0], np.sin(result[:, 1]) * result[:, 0] + current_pos[1]))
 #        obstacle_tiles = coords_to_tile(self, obstacle_pos)
 
         # index = 0
@@ -134,14 +135,14 @@ class Helper:
         returns a mask of the seen obstacles, obstacle -> True, else False
         first match the messurements to the angles, then throw out nan, then generate the dir vecs, ten mult with the messurements. 
         '''
-        ang = np.linspace(start=variables.LIDAR_MIN_ANG, endpoint=variables.LIDAR_MAX_ANG, num= raw_lidar_data.shape)
+        ang = np.linspace(start=variables.LIDAR_MIN_ANG, stop=variables.LIDAR_MAX_ANG, num= raw_lidar_data.shape[0])
         compund = np.stack([ang, raw_lidar_data] , axis= 1)
-        compund = compund[np.isnan(compund[:,1]).any(axis=0)]
-
-        dir_x = np.cos(compund[:, 1])
-        dir_y = np.sin(compund[:, 1])
+        compund = compund[~np.isnan(compund[:,1])]
+        dir_x = np.cos(compund[:, 0])
+        dir_y = np.sin(compund[:, 0])
         coords = np.stack([dir_x, dir_y], axis=1)
-        coords *= compund[:,0]
+        coords[:,0] *= compund[:,0]
+        coords[:,1] *= compund[:,0]
         return Helper.world_to_tile(coords)
 
     @staticmethod
@@ -150,3 +151,8 @@ class Helper:
         return the tile at the very beginning
         '''
         return Helper.world_to_tile_single(variables.START_COORDS)
+    
+
+
+# test = np.linspace(0,36,36)
+# Helper.get_mask_from_lidar_data_raw(test)
