@@ -32,8 +32,8 @@ class PointNavigator:
     def __init__(self):
         '''
         '''
-        self._tf_buffer = tf2_ros.Buffer()
-        self._tf_listener = tf2_ros.TransformListener(self._tf_buffer, self)
+        #self._tf_buffer = tf2_ros.Buffer()
+        #self._tf_listener = tf2_ros.TransformListener(self._tf_buffer, self)
 
         self._current_waypoint: np.ndarray = None
         self._current_waypoint_local: np.ndarray = None
@@ -89,19 +89,19 @@ class PointNavigator:
 
 
     def tick(self):
-        self.get_logger().info('tick point nav')
+       
         '''
         update everything.
         first update the local tf
         if possible move on. update the lodal waypoint, use that to update the goal action, set the waypoint reached state
         '''
-        self._update_globa_to_local_tf()
-        if not self._ready_to_tick: self.get_logger().info('tf not ready') 
+        #self._update_globa_to_local_tf()
+       
         if not self._ready_to_tick: return 
 
         self._update_local_waypoint()
         self._update_action_goal()
-        self._send_action_goal()
+        #self._send_action_goal()
         self._check_if_goal_is_reached()
 
 
@@ -113,7 +113,6 @@ class PointNavigator:
         '''
         set a new waypoint to drive to. no callback or anything
         '''
-        self.get_logger().info('new waypoint')
         self._current_waypoint = waypoint
         self._waypoint_reached = False
 

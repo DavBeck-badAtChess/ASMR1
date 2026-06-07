@@ -31,6 +31,10 @@ class MetaController(Node):
     def __init__(self, name:str):
         super().__init__(name)
         self.get_logger().info('meta_controller innit')
+        self._tf_buffer = tf2_ros.Buffer()
+        self._tf_listener = tf2_ros.TransformListener(self._tf_buffer, self)
+
+
         self._goal_tile : int[int,int]  = (10,10)# TODO i need the goal thingy to verify this
         self._current_tile  :int[int,int]    = Helper.get_starting_tile()
 
