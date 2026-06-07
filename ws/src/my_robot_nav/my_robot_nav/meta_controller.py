@@ -3,6 +3,7 @@ import sys
 sys.dont_write_bytecode = True
 import numpy as np 
 from enum import Enum
+from rclpy.qos import QoSProfile, DurabilityPolicy
 
 import rclpy
 import tf2_ros
@@ -35,8 +36,20 @@ class MetaController(Node):
             10
         )
 
-        self._movement_client = ActionClient(self, SetVelocity, '/set_velocity')
+        # subscribing to goal_point
+        latched_qos = QoSProfile(
+            depth=1,
+            durability=DurabilityPolicy.TRANSIENT_LOCAL
+        )
+        self._goal_point_subscription = self.create_subscription(
+            PointStamped,
+            '/goal_point',
+            self._on_goal_data,
+            latched_qos
+        )
 
+        # creating client for set_velocity
+        self._movement_client = ActionClient(self, SetVelocity, '/set_velocity')
         while not self._movement_client.wait_for_server(timeout_sec=1.0):
             self.get_logger().info('service set velocity not available, waiting again...')
 
@@ -48,10 +61,16 @@ class MetaController(Node):
         
 
     def _on_lidar_data(self, msg):
-        self.get_logger().info('calling  the set_velocity-server')
+        # raw_lidar_data = np.array(msg.ranges)
+        # self.get_logger().info('getting lidar data')
+        pass
+
+    def _on_goal_data(self, msg):
+        self.get_logger().info('calling the goal_point-server')
 
     def _temporary_feedback_function(self, feedback_msg):
-        self.get_logger().info('calling  the set_velocity-server')
+        # self.get_logger().info('calling  the set_velocity-server')
+        pass
 
 def main(args=None) -> None:
     rclpy.init(args=args)
