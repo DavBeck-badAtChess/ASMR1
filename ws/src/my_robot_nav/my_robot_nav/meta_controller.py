@@ -51,10 +51,20 @@ class MetaController(Node):
 
         self._replot_flag : bool = True
 
+        # movement ------------------------
+        
+        self._movement_client = ActionClient(self, SetVelocity, '/set_velocity')
+        while not self._movement_client.wait_for_server(timeout_sec=1.0):
+            self.get_logger().info('service set velocity not available, waiting again...')
+
         self._timer = self.create_timer(
             1.0 / MetaController.TICK_HZ, self._tick
         )
 
+    
+    # movement node stuff ======================================================================================================
+    def _send_action_goal(self):
+        self._movement_client.send_goal_async(self._point_navigator.action_goal)
 
     # goal node stuff ======================================================================================================
     def _on_goal_reached_send(self, msg):
@@ -62,6 +72,24 @@ class MetaController(Node):
         just set the state.
         '''
         self._goal_msg_recieved = True
+
+    def _update_globa_to_local_tf_of_point_nav(self):
+        '''
+        provides the tf to transform global into local
+        '''
+        self.get_logger().info('trying to innit tf')
+        try:
+           tf = self._tf_buffer.lookup_transform(
+               "odom",   # source frame
+               "map",   # source frame
+               #"base_link",   # source frame
+                rclpy.time.Time(),   # latest available transform
+               timeout=rclpy.duration.Duration(seconds=0.2)
+           )
+           self._point_navigator.set_globa_to_local_tf(tf)
+        except tf2_ros.LookupException:
+            return None
+        
     
     def _create_goal_sub(self):
         '''
@@ -120,7 +148,6 @@ class MetaController(Node):
         if self._current_tile is None: return False
         return True
 
-
     def _tick(self):
         '''
         here i need to define all the actions, that need to be done in one tick. this needs to be driven by a clock.
@@ -136,6 +163,7 @@ class MetaController(Node):
         self._synch_env_with_lidar_data()
         self._synch_map()
 
+        self._update_globa_to_local_tf_of_point_nav()
         if self._point_navigator.waypoint_reached:
             self._current_tile = self._solver.get_next_tile(tile_position=self._current_tile)
             self.get_logger().info(f'current tile = {self._current_tile}')
@@ -143,6 +171,7 @@ class MetaController(Node):
             self._replot_flag = True
 
         self._point_navigator.tick()
+        self._send_action_goal()
 
 
 def main(args=None) -> None:

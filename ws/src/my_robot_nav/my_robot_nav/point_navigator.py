@@ -10,12 +10,11 @@ import tf2_ros
 import tf2_geometry_msgs  # noqa: F401  (registers transform support for PointStamped)
 from rclpy.action import ActionClient
 from geometry_msgs.msg import PointStamped
-from rclpy.node import Node
 from my_robot_interfaces.action import SetVelocity # this is the action defined by the provided movement controller, the topic is /set_velocity
 
 
 
-class PointNavigator(Node):
+class PointNavigator:
 
     MAX_LIN_SPEED:float = 1.0
     MAX_ROT_SPEED:float = 1.0
@@ -33,10 +32,8 @@ class PointNavigator(Node):
     def __init__(self):
         '''
         '''
-        super().__init__('point_navigator')
         self._tf_buffer = tf2_ros.Buffer()
         self._tf_listener = tf2_ros.TransformListener(self._tf_buffer, self)
-        self._movement_client = ActionClient(self, SetVelocity, '/set_velocity')
 
         self._current_waypoint: np.ndarray = None
         self._current_waypoint_local: np.ndarray = None
@@ -52,8 +49,9 @@ class PointNavigator(Node):
 
         self._waypoint_reached = False
 
-        while not self._movement_client.wait_for_server(timeout_sec=1.0):
-            self.get_logger().info('service set velocity not available, waiting again...')
+        # self._movement_client = ActionClient(self, SetVelocity, '/set_velocity')
+        # while not self._movement_client.wait_for_server(timeout_sec=1.0):
+        #     self.get_logger().info('service set velocity not available, waiting again...')
 
 
     def _check_if_waypoint_is_reached(self):
@@ -97,9 +95,7 @@ class PointNavigator(Node):
         first update the local tf
         if possible move on. update the lodal waypoint, use that to update the goal action, set the waypoint reached state
         '''
-        rclpy.spin_once(self)
         self._update_globa_to_local_tf()
-        rclpy.spin_once(self)
         if not self._ready_to_tick: self.get_logger().info('tf not ready') 
         if not self._ready_to_tick: return 
 
@@ -109,8 +105,8 @@ class PointNavigator(Node):
         self._check_if_goal_is_reached()
 
 
-    def _send_action_goal(self):
-        self._movement_client.send_goal_async(self._goal)
+    #def _send_action_goal(self):
+    #    self._movement_client.send_goal_async(self._goal)
 
 
     def set_new_waypoint(self, waypoint:np.ndarray):
@@ -128,22 +124,25 @@ class PointNavigator(Node):
         '''
 
 
-    def _update_globa_to_local_tf(self):
-        '''
-        provides the tf to transform global into local
-        '''
-        self.get_logger().info('trying to innit tf')
-        try:
-            self._globa_to_local_tf = self._tf_buffer.lookup_transform(
-                "odom",   # source frame
-                "map",   # source frame
-                #"base_link",   # source frame
-                 rclpy.time.Time(),   # latest available transform
-                timeout=rclpy.duration.Duration(seconds=0.2)
-            )
-            self.get_logger().info('innited tf')
-        except tf2_ros.LookupException:
-            return None
+    # def _update_globa_to_local_tf(self):
+    #     '''
+    #     provides the tf to transform global into local
+    #     '''
+    #     self.get_logger().info('trying to innit tf')
+    #     try:
+    #         self._globa_to_local_tf = self._tf_buffer.lookup_transform(
+    #             "odom",   # source frame
+    #             "map",   # source frame
+    #             #"base_link",   # source frame
+    #              rclpy.time.Time(),   # latest available transform
+    #             timeout=rclpy.duration.Duration(seconds=0.2)
+    #         )
+    #         self.get_logger().info('innited tf')
+    #     except tf2_ros.LookupException:
+    #         return None
+        
+    def set_globa_to_local_tf(self, tf ):
+        self._globa_to_local_tf = tf 
 
 
     @property
@@ -152,3 +151,7 @@ class PointNavigator(Node):
         return if the waypoint was reached
         '''
         return self._waypoint_reached
+    
+    @property
+    def action_goal(self):
+        return self._goal
