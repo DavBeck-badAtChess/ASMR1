@@ -91,6 +91,7 @@ class PointNavigator(Node):
 
 
     def tick(self):
+        self.get_logger().info('tick')
         '''
         update everything.
         first update the local tf
@@ -113,6 +114,7 @@ class PointNavigator(Node):
         '''
         set a new waypoint to drive to. no callback or anything
         '''
+        self.get_logger().info('new waypoint')
         self._current_waypoint = waypoint
         self._waypoint_reached = False
 
