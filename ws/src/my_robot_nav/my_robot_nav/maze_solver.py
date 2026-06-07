@@ -5,7 +5,7 @@ import numpy as np
 from enum import Enum
 
 #import matplotlib.pyplot as plt
-
+#from helper import Helper
 
 '''
 TODO 
@@ -115,10 +115,21 @@ class Solver:
         obstructed and set the flag accordingly
         '''
         new_information:bool = False
+        print(new_geometry_tiles.shape)
+        print(np.max(new_geometry_tiles))
+        print(self._maze.shape)
         new_geometry_mask = np.zeros(self._maze.shape,dtype=bool)
-        new_geometry_mask[new_geometry_tiles] = True
+        new_geometry_mask[
+            new_geometry_tiles[:, 0],
+            new_geometry_tiles[:, 1]
+        ] = True
         if np.all(new_geometry_mask | self._maze):# see if new_geometry_mask -> self._maze
-            self._maze[~new_geometry_mask] = False
+            print("NEW"*10)
+            #self._maze[~new_geometry_mask] = False
+            self._maze[
+                new_geometry_tiles[:, 0],
+                new_geometry_tiles[:, 1]
+            ] = False
             self._update_soft_maze()
             new_information = True
         if np.any(self._maze_soft & self._path_mask):
@@ -210,6 +221,20 @@ class Solver:
     @property
     def path_mask(self)-> np.ndarray:
         return self._path_mask
+
+
+
+
+# test = np.zeros((200,200), dtype=bool)
+# scan = np.linspace(0,2, 36)
+# solver = Solver(test.shape, (10,10))
+# scan_idx = Helper.get_tiles_from_lidar_data_raw(scan)
+# print("scan idx", scan_idx.shape)
+# solver.account_for_geometry(scan_idx)
+# solver._update_soft_maze()
+# plt.imshow(solver._maze_soft)
+# plt.show()
+
 
 """ test_maze = plt.imread("/Users/davidbeckschulte/Desktop/obstacles_100x100.png")[:,:,0]
 test_maze = (test_maze-test_maze.min())/(test_maze.max()-test_maze.min())
