@@ -66,7 +66,7 @@ class Helper:
         '''
         returns the x,y size of a sinlge tile (i think the was the robot size)
         '''
-        return variables.ROBOT_WIDTH
+        return (variables.ROBOT_WIDTH,variables.ROBOT_WIDTH)
 
     @staticmethod
     def get_world_arr_shape()->tuple[int, int]:
@@ -136,7 +136,7 @@ class Helper:
         '''
         ang = np.linspace(start=variables.LIDAR_MIN_ANG, endpoint=variables.LIDAR_MAX_ANG, num= raw_lidar_data.shape)
         compund = np.stack([ang, raw_lidar_data] , axis= 1)
-        compund = compund[np.isnan(compund[:,0]).any(axis=0)]
+        compund = compund[np.isnan(compund[:,1]).any(axis=0)]
 
         dir_x = np.cos(compund[:, 1])
         dir_y = np.sin(compund[:, 1])
