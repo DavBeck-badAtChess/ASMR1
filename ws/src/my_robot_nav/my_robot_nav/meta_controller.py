@@ -35,7 +35,9 @@ class MetaController(Node):
         self._goal_tile : int[int,int] = (10,10)# i need the goal thingy to verify this
         self._solver:Solver = Solver(maze_shape=Helper.get_world_arr_shape(), goal_tile= self._goal_tile)
         self._plotter:OccGrid = OccGrid(map_dims_in_meter=Helper.get_total_map_dim_in_meter())
+        self.get_logger().info('meta c now building point nav')
         self._point_navigator:PointNavigator = PointNavigator()
+        self.get_logger().info('meta c after building point nav')
         self._current_tile: int[int,int] = Helper.get_starting_tile()
 
 
@@ -49,6 +51,7 @@ class MetaController(Node):
         i = 0
         while i < 5:
             rclpy.spin_once(self, timeout_sec=1.0)
+            i += 1
         # this will kick of the driving.
         self._on_checkpoint_reached()
 
@@ -61,8 +64,13 @@ class MetaController(Node):
         this is the loop that keeps everything running. so everything is run of the provided controllers clock.
         # TODO this should realy look two steps ahead...
         '''
-        next_waypoint_tile: tuple[int,int] = self._solver.get_next_tile(tile_position=self._current_tile)
+        self.get_logger().info('_on_checkpoint_reached meta c')
+        #next_waypoint_tile: tuple[int,int] = self._solver.get_next_tile(tile_position=self._current_tile)
+        next_waypoint_tile = np.array([10.0,10.0])
+        self.get_logger().info('_on_checkpoint_reached meta c got next tile')
         next_waypoint = Helper.tile_to_world_single(tile=next_waypoint_tile)
+        
+        self.get_logger().info('drive to send to point nav meta c')
         self._point_navigator.drive_to(waypoint=next_waypoint, callback= self._on_checkpoint_reached)
 
     def _replot_map(self):

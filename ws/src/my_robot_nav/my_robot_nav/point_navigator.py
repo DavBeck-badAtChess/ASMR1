@@ -70,8 +70,8 @@ class PointNavigator(Node):
         
         self.get_logger().info('point_navigator now running')
 
-        self._movement_client.send_goal_async(self._goal, feedback_callback=self._on_setvel_feedback)
-        rclpy.spin_once(self)
+        #self._movement_client.send_goal_async(self._goal, feedback_callback=self._on_setvel_feedback)
+        #rclpy.spin_once(self)
 
 
     def kill(self):
@@ -90,10 +90,15 @@ class PointNavigator(Node):
         set the state to goal not reached.
         since the privided controller will always call back at 10hrz, this will get picked up in the next update.
         '''
+        self.get_logger().info('drive_to point nav')
         self._current_waypoint = coord
         self._curr_callback = callback
         self._goal_reached = False
         self._curr_callback = self._curr_callback
+        self.get_logger().info(
+         f"steering instruction passed point navigaotr"
+        )
+        self._movement_client.send_goal_async(self._goal, feedback_callback=self.feedback_callback)
         rclpy.spin_once(self)
 
     def _on_setvel_feedback(self,feedback_msg):
@@ -123,6 +128,7 @@ class PointNavigator(Node):
         self._update_rot_acc()
         
         self._movement_client.send_goal_async(self._goal, feedback_callback=self._on_setvel_feedback)
+        rclpy.spin_once(self)
 
 
     def _update_lin_acc(self)->float:
