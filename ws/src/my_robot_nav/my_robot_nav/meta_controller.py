@@ -27,6 +27,7 @@ class MetaController(Node):
         build the solver to feed the 
         '''
 
+        # subscribing to lidar
         self._lidar_subscription = self.create_subscription(
             LaserScan,
             '/scan',
@@ -34,10 +35,23 @@ class MetaController(Node):
             10
         )
 
+        self._movement_client = ActionClient(self, SetVelocity, '/set_velocity')
+
+        while not self._movement_client.wait_for_server(timeout_sec=1.0):
+            self.get_logger().info('service set velocity not available, waiting again...')
+
+        msg = SetVelocity.Goal()
+        msg.linear_x = 0.5
+        msg.angular_z = 0.0
+
+        self._movement_client.send_goal_async(msg, self._temporary_feedback_function)
+        
+
     def _on_lidar_data(self, msg):
-        self.get_logger().info(
-            'lidar data caught by meta controller'
-        )
+        self.get_logger().info('calling  the set_velocity-server')
+
+    def _temporary_feedback_function(self, feedback_msg):
+        self.get_logger().info('calling  the set_velocity-server')
 
 def main(args=None) -> None:
     rclpy.init(args=args)
