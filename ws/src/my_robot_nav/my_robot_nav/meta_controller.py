@@ -70,7 +70,7 @@ class MetaController(Node):
         replot_map
         '''
         mc = self._solver.informational_map.copy()
-        mc[self._current_tile] = 2
+       # mc[self._current_tile] = 2
         self._plotter.display(mc)
 
     def _on_lidar_data(self,msg):
@@ -80,7 +80,7 @@ class MetaController(Node):
         self.get_logger().info(
          f"lidar data caught by meta controller"
         )
-        new_information = self._solver.account_for_geometry(Helper.get_mask_from_lidar_data_raw(raw_lidar_data=np.array(msg.ranges)))
+        new_information = self._solver.account_for_geometry(Helper.get_tiles_from_lidar_data_raw(raw_lidar_data=np.array(msg.ranges)))
         if new_information: self._replot_map()
 
 

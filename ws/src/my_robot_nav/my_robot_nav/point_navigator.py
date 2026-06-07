@@ -41,8 +41,8 @@ class PointNavigator(Node):
         self._rot_pd:tuple[int,int] = (0.5,0.5)
         self._lin_pd:tuple[int,int] = (0.5,0.5)
 
-        self._current_lin_acc:float = 0
-        self._current_rot_acc:float = 0
+        self._current_lin_acc:float = 0.5
+        self._current_rot_acc:float = 0.0
     
         self._goal = SetVelocity.Goal()
         self._global_to_local_tf = None
@@ -61,6 +61,8 @@ class PointNavigator(Node):
             rclpy.spin_once(self, timeout_sec=1.0)
 
         self.get_logger().info('point_navigator now running')
+        self._movement_client.send_goal_async(self._goal, feedback_callback=self._on_setvel_feedback)
+        rclpy.spin_once(self)
 
     def kill(self):
         '''
@@ -82,6 +84,7 @@ class PointNavigator(Node):
         self._curr_callback = callback
         self._waypoint_reached = False
         self._curr_callback = self._curr_callback
+        rclpy.spin_once(self)
 
     def _on_setvel_feedback(self,feedback_msg):
         '''
@@ -90,9 +93,14 @@ class PointNavigator(Node):
         the assigned states are not reached -> do nothing
         else get new states to assign and do so
         '''
+        self.get_logger().info(
+         f"callback point navigaotr"
+        )
         if self._waypoint_reached: return
         if self._check_if_waypoint_reached():
             self._waypoint_reached = True
+            if not self._curr_callback is None:
+                self._curr_callback()
         fb = feedback_msg.feedback
         if np.abs(self._goal.linear_x -fb.current_linear_x) > PointNavigator.CLOSNESS_ang_renameme:
             return
@@ -103,7 +111,8 @@ class PointNavigator(Node):
         self._update_lin_acc()
         self._update_rot_acc()
         
-        self._movement_client.send_goal_async(self._goal, feedback_callback=self.feedback_callback)
+        self._movement_client.send_goal_async(self._goal, feedback_callback=self._on_setvel_feedback)
+        rclpy.spin_once(self)
 
     def _update_lin_acc(self)->float:
         '''
