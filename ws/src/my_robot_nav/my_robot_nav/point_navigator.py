@@ -32,8 +32,6 @@ class PointNavigator:
     def __init__(self):
         '''
         '''
-        #self._tf_buffer = tf2_ros.Buffer()
-        #self._tf_listener = tf2_ros.TransformListener(self._tf_buffer, self)
 
         self._current_waypoint: np.ndarray = None
         self._current_waypoint_local: np.ndarray = None
@@ -48,10 +46,6 @@ class PointNavigator:
         self._globa_to_local_tf = None
 
         self._waypoint_reached = False
-
-        # self._movement_client = ActionClient(self, SetVelocity, '/set_velocity')
-        # while not self._movement_client.wait_for_server(timeout_sec=1.0):
-        #     self.get_logger().info('service set velocity not available, waiting again...')
 
 
     def _check_if_waypoint_is_reached(self):
@@ -95,18 +89,13 @@ class PointNavigator:
         first update the local tf
         if possible move on. update the lodal waypoint, use that to update the goal action, set the waypoint reached state
         '''
-        #self._update_globa_to_local_tf()
        
         if not self._ready_to_tick: return 
 
         self._update_local_waypoint()
         self._update_action_goal()
-        #self._send_action_goal()
         self._check_if_goal_is_reached()
 
-
-    #def _send_action_goal(self):
-    #    self._movement_client.send_goal_async(self._goal)
 
 
     def set_new_waypoint(self, waypoint:np.ndarray):
@@ -123,23 +112,6 @@ class PointNavigator:
         '''
 
 
-    # def _update_globa_to_local_tf(self):
-    #     '''
-    #     provides the tf to transform global into local
-    #     '''
-    #     self.get_logger().info('trying to innit tf')
-    #     try:
-    #         self._globa_to_local_tf = self._tf_buffer.lookup_transform(
-    #             "odom",   # source frame
-    #             "map",   # source frame
-    #             #"base_link",   # source frame
-    #              rclpy.time.Time(),   # latest available transform
-    #             timeout=rclpy.duration.Duration(seconds=0.2)
-    #         )
-    #         self.get_logger().info('innited tf')
-    #     except tf2_ros.LookupException:
-    #         return None
-        
     def set_globa_to_local_tf(self, tf ):
         self._globa_to_local_tf = tf 
 

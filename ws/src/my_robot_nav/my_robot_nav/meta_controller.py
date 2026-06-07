@@ -69,6 +69,7 @@ class MetaController(Node):
     # movement node stuff ======================================================================================================
     def _send_action_goal(self):
         self._movement_client.send_goal_async(self._point_navigator.action_goal)
+        self.get_logger().info(f'action goal send {self._point_navigator.action_goal}')
 
     # goal node stuff ======================================================================================================
     def _on_goal_reached_send(self, msg):
@@ -86,11 +87,11 @@ class MetaController(Node):
            tf = self._tf_buffer.lookup_transform(
                "odom",   # source frame
                "map",   # source frame
-               #"base_link",   # source frame
                 rclpy.time.Time(),   # latest available transform
                timeout=rclpy.duration.Duration(seconds=0.2)
            )
            self._point_navigator.set_globa_to_local_tf(tf)
+           self.get_logger().info('innited')
         except tf2_ros.LookupException:
             return None
         
@@ -174,6 +175,7 @@ class MetaController(Node):
             self._point_navigator.drive_to(waypoint= Helper.tile_to_world_single(self._current_tile))
             self._replot_flag = True
 
+        self.get_logger().info(f'point nav ready to tik= {self._point_navigator._ready_to_tick}')
         self._point_navigator.tick()
         self._send_action_goal()
 
