@@ -32,58 +32,6 @@ class MetaController(Node):
         '''
         build the solver to feed the 
         '''
-        self._goal_tile : int[int,int] = (10,10)# i need the goal thingy to verify this
-        self._solver:Solver = Solver(maze_shape=Helper.get_world_arr_shape(), goal_tile= self._goal_tile)
-        self._plotter:OccGrid = OccGrid(map_dims_in_meter=Helper.get_total_map_dim_in_meter())
-        self._point_navigator:PointNavigator = PointNavigator()
-        self._current_tile: int[int,int] = Helper.get_starting_tile()
-
-
-        self._lidar_subscription = self.create_subscription(
-            LaserScan,
-            '/scan', 
-            self._on_lidar_data, 
-            10)
-        self._lidar_subscription # prevent unused variable warning
-
-        i = 0
-        while i < 5:
-            rclpy.spin_once(self, timeout_sec=1.0)
-        # this will kick of the driving.
-        self._on_checkpoint_reached()
-
-    def _on_goal_reached(self):
-        self._point_navigator.kill()
-    
-    def _on_checkpoint_reached(self):
-        '''
-        figure out the next step (this causes the update cascade in the maze).
-        this is the loop that keeps everything running. so everything is run of the provided controllers clock.
-        # TODO this should realy look two steps ahead...
-        '''
-        next_waypoint_tile: tuple[int,int] = self._solver.get_next_tile(tile_position=self._current_tile)
-        next_waypoint = Helper.tile_to_world_single(tile=next_waypoint_tile)
-        self._point_navigator.drive_to(waypoint=next_waypoint, callback= self._on_checkpoint_reached)
-
-    def _replot_map(self):
-        '''
-        replot_map
-        '''
-        mc = self._solver.informational_map.copy()
-       # mc[self._current_tile] = 2
-        self._plotter.display(mc)
-
-    def _on_lidar_data(self,msg):
-        '''
-        i assume, that everything that is seen here is not needed emidietly. ie the robot can see one tile ahead.
-        '''
-        self.get_logger().info(
-         f"lidar data caught by meta controller"
-        )
-        new_information = self._solver.account_for_geometry(Helper.get_tiles_from_lidar_data_raw(raw_lidar_data=np.array(msg.ranges)))
-        if new_information: self._replot_map()
-
-
 
 def main(args=None) -> None:
     rclpy.init(args=args)
