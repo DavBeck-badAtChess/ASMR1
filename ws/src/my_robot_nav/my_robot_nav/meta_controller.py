@@ -69,7 +69,9 @@ class MetaController(Node):
         '''
         replot_map
         '''
-        self._plotter.display(self._solver.informational_map)
+        mc = self._solver.informational_map.copy()
+        mc[self._current_tile] = 2
+        self._plotter.display(mc)
 
     def _on_lidar_data(self,msg):
         '''
