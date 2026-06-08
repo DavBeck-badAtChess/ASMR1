@@ -22,8 +22,10 @@ from my_robot_interfaces.action import SetVelocity # this is the action defined 
 
 class MetaController(Node):
 
-    K_ATT = 0.5
-    K_REP = 0.5
+    K_ATT = 0.7
+    K_REP = 1.0
+    KP_ANGULAR = 1.0
+    KD_ANGULAR = 0.4
     INFLUENCE_DISTANCE = 2.0
     MAX_LINEAR = 0.5
     MAX_ANGULAR = 1.0
@@ -44,6 +46,8 @@ class MetaController(Node):
         self._robot_yaw: float = None
         self._att_force = (0, 0)
         self._rep_force = (0, 0)
+        self._prev_error = 0.0
+        self._prev_time = self.get_clock().now()
 
         # time.sleep(10.0) # waiting for rviz and gazebo to load
         # subscribing to lidar
@@ -90,7 +94,7 @@ class MetaController(Node):
             Odometry,
             '/odom',
             self._on_odom_data,
-            10
+            50
         )
 
     def _on_goal_reached(self, msg) :
@@ -158,17 +162,29 @@ class MetaController(Node):
         pass
 
     def _force_to_velocity(self, fx, fy, robot_yaw):
+        # p term
         target_angle = math.atan2(fy, fx)
-
         error_angle = target_angle - robot_yaw
-
         error_angle = math.atan2(math.sin(error_angle), math.cos(error_angle))
+
+        # d term
+        now = self.get_clock().now()
+        dt = (now - self._prev_time).nanoseconds / 1e9
+        if dt > 0:
+            d_error = (error_angle - self._prev_error) / dt
+        else:
+            d_error = 0.0
+
+        self._prev_error = error_angle
+        self._prev_time = now
+        
+        angular_z = self.KP_ANGULAR * error_angle + self.KD_ANGULAR * d_error
 
         magnitude = math.sqrt(fx**2 + fy**2)
 
         goal = SetVelocity.Goal()
         goal.linear_x = min(magnitude * 0.5, self.MAX_LINEAR)
-        goal.angular_z = max(-self.MAX_ANGULAR, min(error_angle * 1.0, self.MAX_ANGULAR))
+        goal.angular_z = max(-self.MAX_ANGULAR, min(angular_z, self.MAX_ANGULAR))
         return goal
 
 def point_stamp_to_coordinate(msg) -> tuple:
