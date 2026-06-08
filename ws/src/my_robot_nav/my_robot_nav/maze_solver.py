@@ -4,7 +4,7 @@ sys.dont_write_bytecode = True
 import numpy as np 
 from enum import Enum
 
-#import matplotlib.pyplot as plt
+i#mport matplotlib.pyplot as plt
 #from helper import Helper
 
 '''
@@ -115,17 +115,12 @@ class Solver:
         obstructed and set the flag accordingly
         '''
         new_information:bool = False
-        print(new_geometry_tiles.shape)
-        print(np.max(new_geometry_tiles))
-        print(self._maze.shape)
         new_geometry_mask = np.zeros(self._maze.shape,dtype=bool)
         new_geometry_mask[
             new_geometry_tiles[:, 0],
             new_geometry_tiles[:, 1]
         ] = True
         if np.all(new_geometry_mask | self._maze):# see if new_geometry_mask -> self._maze
-            print("NEW"*10)
-            #self._maze[~new_geometry_mask] = False
             self._maze[
                 new_geometry_tiles[:, 0],
                 new_geometry_tiles[:, 1]
@@ -211,7 +206,7 @@ class Solver:
         inf = np.ones(self._maze.shape)
         inf[self._maze] += 1
         inf[self._maze_soft] += 1
-        inf[self._path_mask] = -1
+        inf[~self._path_mask] += 1
         return inf
 
     @property
@@ -232,6 +227,15 @@ class Solver:
 # print("scan idx", scan_idx.shape)
 # solver.account_for_geometry(scan_idx)
 # solver._update_soft_maze()
+# plt.imshow(solver._maze_soft)
+# plt.show()
+
+# ass = np.array([ np.inf ,np.inf ,np.inf ,np.inf ,np.inf ,np.inf,np.inf,np.inf,np.inf, 2.2155592, 2.0734823, 2.0074356, 2.0074356 ,2.073483 ,2.215561,np.inf,np.inf
+# ,np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf])
+
+# test = np.zeros((200,200), dtype=bool)
+# solver = Solver(test.shape, goal_tile=(5,5))
+# solver.account_for_geometry(Helper.get_tiles_from_lidar_data_raw(ass))
 # plt.imshow(solver._maze_soft)
 # plt.show()
 

@@ -125,8 +125,13 @@ class MetaController(Node):
 
         ass = Helper.get_tiles_from_lidar_data_raw(raw_lidar_data=np.array(msg.ranges))
         self.get_logger().info(f'lidar {ass}')
-        mc[ass] = 5
-        self._plotter.display(mc)
+        #mc[ass] = 5
+        mc[
+            ass[:, 0],
+            ass[:, 1]
+        ] = 4
+        
+        self._plotter.display(self._solver.informational_map)
         self._replot_flag = False
 
 
