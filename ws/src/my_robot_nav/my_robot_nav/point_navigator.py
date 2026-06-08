@@ -19,7 +19,7 @@ class PointNavigator:
 
     MAX_LIN_SPEED:float = 0.5
     MAX_ROT_SPEED:float = 2.0
-    CLOSNESS_THREASHOLD:float = 0.2
+    CLOSNESS_THREASHOLD:float = 0.3
 
     @property
     def _ready_to_tick(self)-> bool:

@@ -41,26 +41,38 @@ class MetaController(Node):
         self._plotter   : OccGrid    = OccGrid(map_dims_in_meter=Helper.get_total_map_dim_in_meter())
         self._point_navigator   :PointNavigator  = PointNavigator()
 
+        # subscribe to goal
         self._goal_msg_recieved:bool = False
         self._goal_subscription = None
-        self._create_goal_sub()
+        self._goal_subscription = self.create_subscription(
+            PointStamped,
+            '/goal_point',
+            self._on_goal_data,
+            10
+        )
 
+        # subscribe to lidar
         self._latest_lidar_msg = None
         self._lidar_subscription = None
-        self._create_lidar_sub()
+        self._lidar_subscription = self.create_subscription(
+            LaserScan,
+            '/scan', 
+            self._on_lidar_send, 
+            5)
 
         # subscribe to /odom
         self._latest_odom_msg = None
         self._odom_subscription = None
-        self._create_odom_sub()
+        self._odom_subscription = self.create_subscription(
+            Odometry,
+            '/odom',
+            self._on_odom_data,
+            10
+        )
         self._heading_glob:float = None
-        self._pos_glob:np.ndarray = None
-
+        self._robot_coord:np.ndarray = None
 
         self._replot_flag : bool = True
-
-        # movement ------------------------
-        
         self._movement_client = ActionClient(self, SetVelocity, '/set_velocity')
         while not self._movement_client.wait_for_server(timeout_sec=1.0):
             self.get_logger().info('service set velocity not available, waiting again...')
@@ -75,13 +87,7 @@ class MetaController(Node):
     def _send_action_goal(self):
         self._movement_client.send_goal_async(self._point_navigator.action_goal)
 
-    def _create_odom_sub(self):
-        self._odom_subscription = self.create_subscription(
-            Odometry,
-            '/odom',
-            self._on_odom_data,
-            10
-        )
+
     def _on_odom_data(self, msg):
         self._latest_odom_msg = msg
     
@@ -99,16 +105,7 @@ class MetaController(Node):
         self._goal_msg_recieved = True
 
 
-    def _create_goal_sub(self):
-        '''
-        TODO
-        '''
-        self._goal_subscription = self.create_subscription(
-            PointStamped,
-            '/goal_point',
-            self._on_goal_data,
-            10
-        )
+
     def _on_goal_data(self, msg: PointStamped):
         if not self._goal_tile is None: return
         point_np = np.array([
@@ -121,12 +118,6 @@ class MetaController(Node):
 
 
     # lidar stuff ======================================================================================================
-    def _create_lidar_sub(self):
-        self._lidar_subscription = self.create_subscription(
-            LaserScan,
-            '/scan', 
-            self._on_lidar_send, 
-            5)
 
 
     def _on_lidar_send(self, msg):
@@ -163,7 +154,6 @@ class MetaController(Node):
         self._replot_flag = self._solver.account_for_geometry(Helper.get_tiles_from_lidar_data_raw(raw_lidar_data=np.array(msg.ranges),
                                                                                                    current_coord= self._robot_coord,
                                                                                                    current_heading=self._robot_heading))
-        self._latest_lidar_msg = None
 
 
     # tick stuff ======================================================================================================
@@ -194,19 +184,20 @@ class MetaController(Node):
         self._synch_map()
 
         #self._update_globa_to_local_tf_of_point_nav()
+        
         self._point_navigator.set_global_positions(global_pos=self._robot_coord, heading=self._robot_heading)
-        if self._point_navigator.waypoint_reached:
-            self._current_tile = self._solver.get_next_tile(tile_position=self._current_tile)
-            self._point_navigator.set_new_waypoint(waypoint= Helper.tile_to_world_single(self._current_tile))
-            self._replot_flag = True
+        #if self._point_navigator.waypoint_reached:
+        self._current_tile = Helper.world_to_tile(self._robot_coord)
+        self._current_tile = self._solver.get_next_tile(tile_position=self._current_tile)
+        self._point_navigator.set_new_waypoint(waypoint= Helper.tile_to_world_single(self._current_tile))
+        self._replot_flag = True
 
         self._point_navigator.tick()
         self._send_action_goal()
 
-        self.get_logger().info(f'rotation {self._robot_heading*180/3.14}')
-        #self.get_logger().info(f'pos {self._point_navigator.current_global_coord_offset}')
-        # self.get_logger().info(f'local wp {self._point_navigator._current_waypoint_local}')
-        # self.get_logger().info(f'local wp {self._point_navigator._current_waypoint_local}')
+        # this prevents old data from being used
+        self._latest_lidar_msg = None
+
 
 
 def main(args=None) -> None:
