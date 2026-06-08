@@ -29,11 +29,10 @@ class MetaController(Node):
     this is does not directly send any signals, it is just a controller.
     '''
     TICK_HZ = 10.00
+    ROTATION_TH = 0.5
 
     def __init__(self, name:str):
         super().__init__(name)
-
-
         self._goal_tile : int[int,int]  =None# Helper.world_to_tile_single(np.array([5,5]))# TODO i need the goal thingy to verify this
         self._current_tile  :int[int,int]    = Helper.get_starting_tile()
 
@@ -105,7 +104,6 @@ class MetaController(Node):
         self._goal_msg_recieved = True
 
 
-
     def _on_goal_data(self, msg: PointStamped):
         if not self._goal_tile is None: return
         point_np = np.array([
@@ -167,6 +165,7 @@ class MetaController(Node):
         if self._solver is None: return False
         return True
 
+
     def _tick(self):
         '''
         here i need to define all the actions, that need to be done in one tick. this needs to be driven by a clock.
@@ -179,7 +178,11 @@ class MetaController(Node):
 
         self._update_global_positions()
         if self._point_navigator.lidar_data_usable:
-            self._synch_env_with_lidar_data()
+            if abs(self._point_navigator.agnular_z) < MetaController.ROTATION_TH:
+                '''
+                naive check to make shure the current angular v is not to high. this would lead to the lidar/odom connecton to be rubish
+                '''
+                self._synch_env_with_lidar_data()
         
         self._synch_map()
 
@@ -187,7 +190,7 @@ class MetaController(Node):
         
         self._point_navigator.set_global_positions(global_pos=self._robot_coord, heading=self._robot_heading)
         #if self._point_navigator.waypoint_reached:
-        self._current_tile = Helper.world_to_tile(self._robot_coord)
+        self._current_tile = Helper.world_to_tile_single(self._robot_coord)
         self._current_tile = self._solver.get_next_tile(tile_position=self._current_tile)
         self._point_navigator.set_new_waypoint(waypoint= Helper.tile_to_world_single(self._current_tile))
         self._replot_flag = True
@@ -197,6 +200,7 @@ class MetaController(Node):
 
         # this prevents old data from being used
         self._latest_lidar_msg = None
+        self._point_navigator._goal
 
 
 

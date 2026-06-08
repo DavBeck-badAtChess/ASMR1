@@ -4,6 +4,7 @@ sys.dont_write_bytecode = True
 import numpy as np 
 from enum import Enum
 
+
 #i#mport matplotlib.pyplot as plt
 #from helper import Helper
 
@@ -220,47 +221,3 @@ class Solver:
     @property
     def path_mask(self)-> np.ndarray:
         return self._path_mask
-
-
-
-
-# test = np.zeros((200,200), dtype=bool)
-# scan = np.linspace(0,2, 36)
-# solver = Solver(test.shape, (10,10))
-# scan_idx = Helper.get_tiles_from_lidar_data_raw(scan)
-# print("scan idx", scan_idx.shape)
-# solver.account_for_geometry(scan_idx)
-# solver._update_soft_maze()
-# plt.imshow(solver._maze_soft)
-# plt.show()
-
-# ass = np.array([ np.inf ,np.inf ,np.inf ,np.inf ,np.inf ,np.inf,np.inf,np.inf,np.inf, 2.2155592, 2.0734823, 2.0074356, 2.0074356 ,2.073483 ,2.215561,np.inf,np.inf
-# ,np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf])
-
-# test = np.zeros((200,200), dtype=bool)
-# solver = Solver(test.shape, goal_tile=(5,5))
-# solver.account_for_geometry(Helper.get_tiles_from_lidar_data_raw(ass))
-# plt.imshow(solver._maze_soft)
-# plt.show()
-
-
-""" test_maze = plt.imread("/Users/davidbeckschulte/Desktop/obstacles_100x100.png")[:,:,0]
-test_maze = (test_maze-test_maze.min())/(test_maze.max()-test_maze.min())
-print(test_maze)
-test_maze = test_maze>0.5 
-
-
-
-
-
-solver = Solver(test_maze.shape, goal_tile=(5,5))
-
-print(test_maze.shape)
-solver.account_for_geometry(test_maze)
-
-solver.get_next_direction((90, 71))
-t = solver._maze_soft.copy().astype(int)
-t[solver._maze] -=1
-plt.imshow(solver.informational_map)
-plt.show()
- """

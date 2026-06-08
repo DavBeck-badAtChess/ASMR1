@@ -32,6 +32,7 @@ class PointNavigator:
         return True
 
 
+
     def __init__(self):
         '''
         '''
@@ -41,7 +42,7 @@ class PointNavigator:
         self._current_global_coord: np.ndarray = None
         self._current_heading: float = None 
 
-        self._rot_acc:float = 1.0
+        self._rot_acc:float = 2.0
         self._lin_acc:float = 0.0#0.2
 
         self._goal = SetVelocity.Goal()
@@ -59,10 +60,7 @@ class PointNavigator:
         self._waypoint_reached = np.linalg.norm(robot_to_waypoint) < PointNavigator.CLOSNESS_THREASHOLD
 
 
-
-
     def _update_action_goal(self):
-
         robot_to_waypoint = self._current_waypoint - self._current_global_coord
         target_heading = np.arctan2(
             robot_to_waypoint[1],
@@ -89,43 +87,6 @@ class PointNavigator:
 
         self._goal.angular_z = rot_speed
         self._goal.linear_x = lin_speed
-
-    def _update_action_goal_dis(self):
-        '''
-        calculate the next direction, and based on that the sensible speed.
-        if the to drive direction is orthogonal, then prioritize rotation, and slow down.
-
-        '''
-        favor_heading = np.arctan2(self._current_waypoint_local[0],self._current_waypoint_local[1])
-        
-        heading_closeness = max(np.cos(favor_heading - self._current_heading),0)
-
-        rot_acc = (1 - heading_closeness) * self._rot_acc # if orth, rotate faster
-        lin_acc = (heading_closeness-0.5) * self._lin_acc # if orth, slow down
-        
-        lin_speed = self._goal.linear_x + lin_acc
-
-        diff = np.arctan2(
-            np.sin(
-                np.arctan2(
-                    self._current_waypoint_local[1],
-                    self._current_waypoint_local[0]
-                ) - self._current_heading
-            ),
-            np.cos(
-                np.arctan2(
-                    self._current_waypoint_local[1],
-                    self._current_waypoint_local[0]
-                ) - self._current_heading
-            )
-        )
-        if diff < 0:
-            rot_speed = self._goal.angular_z - rot_acc
-        else:
-            rot_speed = self._goal.angular_z + rot_acc
-
-        self._goal.angular_z = np.clip(rot_speed, -PointNavigator.MAX_ROT_SPEED, PointNavigator.MAX_ROT_SPEED)
-        self._goal.linear_x = np.clip(lin_speed,0, PointNavigator.MAX_LIN_SPEED)
 
 
     def tick(self):
@@ -181,3 +142,7 @@ class PointNavigator:
     @property
     def current_global_heading(self)-> float:
         return self._current_heading
+    
+    @property
+    def agnular_z(self)-> float:
+        return self._goal.angular_z
