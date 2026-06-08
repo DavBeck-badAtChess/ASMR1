@@ -2,6 +2,7 @@ from __future__ import annotations
 import sys
 sys.dont_write_bytecode = True
 import numpy as np 
+import math
 from enum import Enum
 from rclpy.qos import QoSProfile, DurabilityPolicy
 
@@ -13,7 +14,7 @@ from rclpy.node import Node
 from geometry_msgs.msg import PointStamped
 from sensor_msgs.msg import LaserScan
 from nav_msgs.msg import Odometry
-from my_robot_perception.odom_utils import get_position
+from my_robot_perception.odom_utils import get_position, get_yaw
 from my_robot_interfaces.action import SetVelocity # this is the action defined by the provided movement controller, the topic is /set_velocity
 
 
@@ -34,6 +35,7 @@ class MetaController(Node):
         '''
         self._robot_pos: tuple = None
         self._goal_pos: tuple = None
+        self._robot_yaw: float = None
         self._att_force = None
 
 
@@ -62,11 +64,11 @@ class MetaController(Node):
         while not self._movement_client.wait_for_server(timeout_sec=1.0):
             self.get_logger().info('service set velocity not available, waiting again...')
 
-        msg = SetVelocity.Goal()
-        msg.linear_x = 0.5
-        msg.angular_z = 0.0
+        # msg = SetVelocity.Goal()
+        # msg.linear_x = 0.5
+        # msg.angular_z = 0.0
 
-        self._movement_client.send_goal_async(msg, self._temporary_feedback_function)
+        # self._movement_client.send_goal_async(msg, self._temporary_feedback_function)
 
         # subscribe to /odom
         self._odom_subscription = self.create_subscription(
@@ -78,11 +80,14 @@ class MetaController(Node):
         
     def _on_odom_data(self, msg):
         self._robot_pos = get_position(msg)
+        self._robot_yaw = get_yaw(msg)
         if self._goal_pos != None:
             self._att_force = (
                 self.K_ATT * (self._goal_pos[0] - self._robot_pos[0]),
                 self.K_ATT * (self._goal_pos[1] - self._robot_pos[1])
             )
+            set_vel_msg = self._force_to_velocity(self._att_force[0], self._att_force[1], self._robot_yaw)
+            self._movement_client.send_goal_async(set_vel_msg, self._temporary_feedback_function)
             self.get_logger().info(f"set force to  {self._att_force}")
 
     def _on_lidar_data(self, msg):
@@ -97,6 +102,20 @@ class MetaController(Node):
     def _temporary_feedback_function(self, feedback_msg):
         # self.get_logger().info('calling  the set_velocity-server')
         pass
+
+    def _force_to_velocity(self, fx, fy, robot_yaw):
+        target_angle = math.atan2(fy, fx)
+
+        error_angle = target_angle - robot_yaw
+
+        error_angle = math.atan2(math.sin(error_angle), math.cos(error_angle))
+
+        magnitude = math.sqrt(fx**2 + fy**2)
+
+        goal = SetVelocity.Goal()
+        goal.linear_x = magnitude * 0.5
+        goal.angular_z = error_angle * 1.0
+        return goal
 
 def point_stamp_to_coordinate(msg) -> tuple:
     """Return (x, y) position from a PointStamp message."""
