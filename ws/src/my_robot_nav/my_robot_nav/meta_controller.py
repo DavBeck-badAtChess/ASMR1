@@ -97,19 +97,18 @@ class MetaController(Node):
             PointStamped,
             '/goal_point',
             self._on_goal_data,
-            self._on_goal_data
+            10
         )
     def _on_goal_data(self, msg: PointStamped):
+        self.get_logger().info(f"Goal received: {point_np}")
         if not self._goal_tile is None: return
         point_np = np.array([
             msg.point.x,
             msg.point.y,
             msg.point.z
         ], dtype=np.float64)
-    
         self._goal_tile = Helper.world_to_tile_single(point_np)
         self._solver = Solver(maze_shape=Helper.get_world_arr_shape(), goal_tile= self._goal_tile)
-        self.get_logger().info(f"Goal received: {point_np}")
 
 
     # lidar stuff ======================================================================================================

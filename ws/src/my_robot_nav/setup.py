@@ -24,9 +24,7 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'obstacle_nav = my_robot_nav.obstacle_nav:main',
             'meta_controller = my_robot_nav.meta_controller:main',
-            'point_navigator = my_robot_nav.point_navigator:main',
         ],
     },
 )

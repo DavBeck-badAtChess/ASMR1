@@ -69,6 +69,13 @@ def generate_launch_description():
             executable='rviz2',
             arguments=['-d', rviz_config],
         ),
+        
+        Node(# start the point meta controller
+            package='my_robot_nav',
+            executable='meta_controller',
+            name='meta_controller',
+            output='screen'
+        ),
 
         Node(# add the robot velocity controller  
             package='my_robot_control',
@@ -76,6 +83,7 @@ def generate_launch_description():
             name='velocity_controller_node',
             output='screen'
         ),
+
 
         Node(# add the goal checker nodek
             package='my_robot_perception',
@@ -89,32 +97,5 @@ def generate_launch_description():
             }],
             output='screen'
         ),
-#
-        Node(# start the point navigator
-            package='my_robot_nav',
-            executable='point_navigator',
-            name='point_navigator',
-            output='screen'
-        ),
-        
-        Node(# start the point navigator
-            package='my_robot_nav',
-            executable='meta_controller',
-            name='meta_controller',
-            output='screen'
-        ),
 
-        #  Node(# start obstacle nav
-        #     package='my_robot_nav',
-        #     executable='obstacle_nav',
-        #     name='obstacle_nav',
-        #     output='screen'
-        # ),
-        
-        #Node(# start the point navigator
-        #    package='my_robot_nav',
-        #    executable='map_test',
-        #    name='occ_grid',
-        #    output='screen'
-        #),
     ])
