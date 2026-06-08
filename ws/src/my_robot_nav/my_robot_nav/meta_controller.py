@@ -1,5 +1,6 @@
 from __future__ import annotations
 import sys
+import time
 sys.dont_write_bytecode = True
 import numpy as np 
 import math
@@ -20,7 +21,9 @@ from my_robot_interfaces.action import SetVelocity # this is the action defined 
 
 class MetaController(Node):
 
-    K_ATT = 0.5
+    K_ATT = 0.1
+    K_REP = 0.5
+    INFLUENCE_DISTANCE = 2.0
 
     '''
     this is where the action happens. 
@@ -36,9 +39,10 @@ class MetaController(Node):
         self._robot_pos: tuple = None
         self._goal_pos: tuple = None
         self._robot_yaw: float = None
-        self._att_force = None
+        self._att_force = (0, 0)
+        self._rep_force = (0, 0)
 
-
+        time.sleep(10.0) # waiting for rviz and gazebo to load
         # subscribing to lidar
         self._lidar_subscription = self.create_subscription(
             LaserScan,
@@ -86,14 +90,33 @@ class MetaController(Node):
                 self.K_ATT * (self._goal_pos[0] - self._robot_pos[0]),
                 self.K_ATT * (self._goal_pos[1] - self._robot_pos[1])
             )
-            set_vel_msg = self._force_to_velocity(self._att_force[0], self._att_force[1], self._robot_yaw)
+            total_force = (
+                self._att_force[0] + self._rep_force[0],
+                self._att_force[1] + self._rep_force[1]
+            )
+            set_vel_msg = self._force_to_velocity(total_force[0], total_force[1], self._robot_yaw)
             self._movement_client.send_goal_async(set_vel_msg, self._temporary_feedback_function)
             self.get_logger().info(f"set force to  {self._att_force}")
 
     def _on_lidar_data(self, msg):
         # raw_lidar_data = np.array(msg.ranges)
         # self.get_logger().info('getting lidar data')
-        pass
+        fx, fy = 0.0, 0.0
+        for i, distance in enumerate(msg.ranges):
+            if not (msg.range_min < distance < msg. range_max):
+                continue
+                if distance > self.INFLUENCE_DISTANCE:
+                    continue
+
+            angle = msg.angle_min + i * msg.angle_increment
+
+            magnitude = self.K_REP * (1.0/distance - 1.0/self.INFLUENCE_DISTANCE) * (1.0/distance**2)
+
+            fx -= magnitude * math.cos(angle)
+            fy -= magnitude * math.sin(angle)
+
+        self._rep_force = (fx, fy)
+                
 
     def _on_goal_data(self, msg):
         self._goal_pos = point_stamp_to_coordinate(msg)
