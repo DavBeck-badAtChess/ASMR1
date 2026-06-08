@@ -26,9 +26,9 @@ class MetaController(Node):
     K_REP = 1.0
     KP_ANGULAR = 1.0
     KD_ANGULAR = 0.4
-    INFLUENCE_DISTANCE = 2.0
+    INFLUENCE_DISTANCE = 1.5
     MAX_LINEAR = 0.5
-    MAX_ANGULAR = 1.0
+    MAX_ANGULAR = 0.5
 
     '''
     this is where the action happens. 
@@ -49,7 +49,7 @@ class MetaController(Node):
         self._prev_error = 0.0
         self._prev_time = self.get_clock().now()
 
-        # time.sleep(10.0) # waiting for rviz and gazebo to load
+        time.sleep(2.0) # waiting for rviz and gazebo to load
         # subscribing to lidar
         self._lidar_subscription = self.create_subscription(
             LaserScan,
@@ -100,6 +100,7 @@ class MetaController(Node):
     def _on_goal_reached(self, msg) :
         if msg.data:
             self._goal_pos = None # breaks odom-loop
+            self._movement_client._cancel_goal_async
             goal = SetVelocity.Goal()
             self._movement_client.send_goal_async(goal, self._temporary_feedback_function)
             self.get_logger().info(f"Goal reached, sending 0-goal to stop.")
