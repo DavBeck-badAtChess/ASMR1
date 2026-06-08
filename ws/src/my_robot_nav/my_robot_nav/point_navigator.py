@@ -18,7 +18,7 @@ from my_robot_interfaces.action import SetVelocity # this is the action defined 
 class PointNavigator:
 
     MAX_LIN_SPEED:float = 0.5
-    MAX_ROT_SPEED:float = 1.0
+    MAX_ROT_SPEED:float = 2.0
     CLOSNESS_THREASHOLD:float = 0.2
 
     @property

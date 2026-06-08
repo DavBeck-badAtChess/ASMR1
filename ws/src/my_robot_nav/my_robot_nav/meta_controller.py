@@ -32,8 +32,6 @@ class MetaController(Node):
 
     def __init__(self, name:str):
         super().__init__(name)
-        # self._tf_buffer = tf2_ros.Buffer()
-        # self._tf_listener = tf2_ros.TransformListener(self._tf_buffer, self)
 
 
         self._goal_tile : int[int,int]  =None# Helper.world_to_tile_single(np.array([5,5]))# TODO i need the goal thingy to verify this
@@ -54,7 +52,7 @@ class MetaController(Node):
         # subscribe to /odom
         self._latest_odom_msg = None
         self._odom_subscription = None
-        self._odom_subscription()
+        self._create_odom_sub()
         self._heading_glob:float = None
         self._pos_glob:np.ndarray = None
 
@@ -77,7 +75,7 @@ class MetaController(Node):
     def _send_action_goal(self):
         self._movement_client.send_goal_async(self._point_navigator.action_goal)
 
-    def _create_goal_sub(self):
+    def _create_odom_sub(self):
         self._odom_subscription = self.create_subscription(
             Odometry,
             '/odom',
@@ -89,7 +87,7 @@ class MetaController(Node):
     
     def _update_global_positions(self):
         pos_t = get_position(self._latest_odom_msg)
-        self._robot_coord = np.array(pos_t[0], pos_t[0])
+        self._robot_coord = np.array([pos_t[0], pos_t[1]])
         self._robot_heading = get_yaw(self._latest_odom_msg)
 
 
@@ -99,21 +97,6 @@ class MetaController(Node):
         just set the state.
         '''
         self._goal_msg_recieved = True
-
-    # def _update_globa_to_local_tf_of_point_nav(self):
-    #     '''
-    #     provides the tf to transform global into local
-    #     '''
-    #     try:
-    #        tf = self._tf_buffer.lookup_transform(
-    #            "odom",   # source frame
-    #            "base_link",   # source frame
-    #             rclpy.time.Time(),   # latest available transform
-    #            timeout=rclpy.duration.Duration(seconds=0.1)
-    #        )
-    #        self._point_navigator.set_globa_to_local_tf(tf)
-    #     except tf2_ros.LookupException:
-    #         return None
 
 
     def _create_goal_sub(self):
@@ -135,7 +118,6 @@ class MetaController(Node):
         ], dtype=np.float64)
         self._goal_tile = Helper.world_to_tile_single(point_np)
         self._solver = Solver(maze_shape=Helper.get_world_arr_shape(), goal_tile= self._goal_tile)
-        #self._solver.account_for_geometry(np.ndarray())
 
 
     # lidar stuff ======================================================================================================
@@ -178,8 +160,6 @@ class MetaController(Node):
         '''
         if self._latest_lidar_msg is None: return
         msg = self._latest_lidar_msg
-        #current_coord=# self._point_navigator.current_global_coord_offset + Helper.tile_to_world_single(Helper.get_starting_tile())
-        # self.get_logger().info(f'lidar rang {np.max(np.array(msg.ranges))}')
         self._replot_flag = self._solver.account_for_geometry(Helper.get_tiles_from_lidar_data_raw(raw_lidar_data=np.array(msg.ranges),
                                                                                                    current_coord= self._robot_coord,
                                                                                                    current_heading=self._robot_heading))
@@ -201,13 +181,13 @@ class MetaController(Node):
         '''
         here i need to define all the actions, that need to be done in one tick. this needs to be driven by a clock.
         '''
-        self._update_global_positions()
         if not self._ready_to_tick: return
 
         if self._goal_msg_recieved:
             self._point_navigator.kill()
             return
 
+        self._update_global_positions()
         if self._point_navigator.lidar_data_usable:
             self._synch_env_with_lidar_data()
         
@@ -223,7 +203,7 @@ class MetaController(Node):
         self._point_navigator.tick()
         self._send_action_goal()
 
-        self.get_logger().info(f'rotation {self._robot_heading}')
+        self.get_logger().info(f'rotation {self._robot_heading*180/3.14}')
         #self.get_logger().info(f'pos {self._point_navigator.current_global_coord_offset}')
         # self.get_logger().info(f'local wp {self._point_navigator._current_waypoint_local}')
         # self.get_logger().info(f'local wp {self._point_navigator._current_waypoint_local}')
