@@ -36,6 +36,7 @@ class PointNavigator:
 
         self._current_waypoint: np.ndarray = None
         self._current_waypoint_local: np.ndarray = None
+        self._current_heading: float = None 
         self._current_coord_global: np.ndarray = None #TODO USE THIS LATER
 
         self._rot_acc:float = 1.0
@@ -60,12 +61,15 @@ class PointNavigator:
         self._current_waypoint_local = self._make_local(self._current_waypoint)
 
 
-    def _get_local_heading(self):
-        dx, dy = self._current_waypoint_local
-
-        target_heading = np.arctan2(dy, dx)
-        #target_heading = np.arctan2( dx, dy)
-        return target_heading
+    def _update_current_global_heading(self):
+        self._current_heading = self._globa_to_local_tf.transform.rotation.z
+    
+    def _update_current_global_coord_offset(self):
+        '''
+        this sets the global position of the robot, ie how faar has it moved from the beginning.
+        since it starts at 00, i can just transform 00 to local, and take the negative of that
+        '''
+        self.current_global_coord_offset = -self._make_local(np.array([0,0]))
 
     def _update_action_goal_dis(self):
 
@@ -101,8 +105,8 @@ class PointNavigator:
 
         '''
         favor_heading = np.arctan2(self._current_waypoint_local[0],self._current_waypoint_local[1])
-        current_heading = self._globa_to_local_tf.transform.rotation.z
-        heading_closeness = max(np.cos(favor_heading - current_heading),0)
+        
+        heading_closeness = max(np.cos(favor_heading - self._current_heading),0)
 
         rot_acc = (1 - heading_closeness) * self._rot_acc # if orth, rotate faster
         lin_acc = (heading_closeness-0.5) * self._lin_acc # if orth, slow down
@@ -114,13 +118,13 @@ class PointNavigator:
                 np.arctan2(
                     self._current_waypoint_local[1],
                     self._current_waypoint_local[0]
-                ) - current_heading
+                ) - self._current_heading
             ),
             np.cos(
                 np.arctan2(
                     self._current_waypoint_local[1],
                     self._current_waypoint_local[0]
-                ) - current_heading
+                ) - self._current_heading
             )
         )
         if diff < 0:
@@ -143,6 +147,8 @@ class PointNavigator:
         if not self._ready_to_tick: return 
 
         self._update_local_waypoint()
+        self._update_current_global_heading()
+        self._update_current_global_coord_offset()
         self._update_action_goal()
         self._check_if_waypoint_is_reached()
 
@@ -181,6 +187,12 @@ class PointNavigator:
 
 
     @property
+    def lidar_data_usable(self)->bool:
+        if self._current_coord_global is None: return False
+        if self._current_heading is None: return False
+        return True
+
+    @property
     def waypoint_reached(self)-> bool:
         '''
         return if the waypoint was reached
@@ -191,3 +203,11 @@ class PointNavigator:
     @property
     def action_goal(self):
         return self._goal
+    
+    @property
+    def current_global_coord_offset(self)-> np.ndarray:
+        return self.current_global_coord_offset
+    
+    @property
+    def current_global_heading(self)-> float:
+        return self._current_heading

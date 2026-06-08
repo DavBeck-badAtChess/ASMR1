@@ -207,7 +207,7 @@ class Solver:
         inf[self._maze] += 1
         inf[self._maze_soft] += 1
         inf[~self._path_mask] += 1
-        return inf
+        return inf * 10
 
     @property
     def solved_maze(self)-> np.ndarray:

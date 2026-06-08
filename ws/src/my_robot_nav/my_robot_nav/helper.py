@@ -77,20 +77,22 @@ class Helper:
         return (shape[0] * size[0],shape[1] * size[1])
 
     @staticmethod
-    def get_tiles_from_lidar_data_raw(raw_lidar_data: np.ndarray) -> np.ndarray:
+    def get_tiles_from_lidar_data_raw(raw_lidar_data: np.ndarray, current_coord:np.ndarray, current_heading:float) -> np.ndarray:
         mask = ~np.isnan(raw_lidar_data)
         mask_inf = ~np.isinf(raw_lidar_data)
         mask &= mask_inf
         dist = raw_lidar_data[mask]
         ang = np.linspace(
-            variables.LIDAR_MIN_ANG,
-            variables.LIDAR_MAX_ANG,
+            variables.LIDAR_MIN_ANG + current_heading,
+            variables.LIDAR_MAX_ANG + current_heading,
             raw_lidar_data.shape[0]
         )[mask]
         coords = np.column_stack([
             np.cos(ang) * dist,
             np.sin(ang) * dist
         ])
+        coords[:,0] += current_coord[0]
+        coords[:,1] += current_coord[1]
         return Helper.world_to_tile(coords)
 
     @staticmethod

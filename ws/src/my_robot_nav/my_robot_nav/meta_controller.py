@@ -117,20 +117,7 @@ class MetaController(Node):
         call this to synch the vis map.
         use up the flag here
         '''
-        #if not self._replot_flag: return
-        mc = self._solver.informational_map.copy()
-        mc[self._current_tile] =- 40
-        msg = self._latest_lidar_msg
-        if msg is None: return 
-
-        ass = Helper.get_tiles_from_lidar_data_raw(raw_lidar_data=np.array(msg.ranges))
-        self.get_logger().info(f'lidar {ass}')
-        #mc[ass] = 5
-        mc[
-            ass[:, 0],
-            ass[:, 1]
-        ] = 4
-        
+        if not self._replot_flag: return
         self._plotter.display(self._solver.informational_map)
         self._replot_flag = False
 
@@ -142,11 +129,12 @@ class MetaController(Node):
         '''
         if self._latest_lidar_msg is None: return
         msg = self._latest_lidar_msg
-        
+        current_coord= self._point_navigator.current_global_coord_offset + Helper.tile_to_world(Helper.get_starting_tile())
         self.get_logger().info(f'lidar rang {np.max(np.array(msg.ranges))}')
-        self._replot_flag = self._solver.account_for_geometry(Helper.get_tiles_from_lidar_data_raw(raw_lidar_data=np.array(msg.ranges)))
-        
-       # self._latest_lidar_msg = None
+        self._replot_flag = self._solver.account_for_geometry(Helper.get_tiles_from_lidar_data_raw(raw_lidar_data=np.array(msg.ranges),
+                                                                                                   current_coord= current_coord,
+                                                                                                   current_heading=self._point_navigator.current_global_heading))
+        self._latest_lidar_msg = None
 
 
     # tick stuff ======================================================================================================
@@ -169,7 +157,9 @@ class MetaController(Node):
             self._point_navigator.kill()
             return
 
-        self._synch_env_with_lidar_data()
+        if self._point_navigator.lidar_data_usable:
+            self._synch_env_with_lidar_data()
+        
         self._synch_map()
 
         self._update_globa_to_local_tf_of_point_nav()
