@@ -34,10 +34,10 @@ class MetaController(Node):
         self._tf_listener = tf2_ros.TransformListener(self._tf_buffer, self)
 
 
-        self._goal_tile : int[int,int]  = Helper.world_to_tile_single(np.array([5,5]))# TODO i need the goal thingy to verify this
+        self._goal_tile : int[int,int]  =None# Helper.world_to_tile_single(np.array([5,5]))# TODO i need the goal thingy to verify this
         self._current_tile  :int[int,int]    = Helper.get_starting_tile()
 
-        self._solver    : Solver     = Solver(maze_shape=Helper.get_world_arr_shape(), goal_tile= self._goal_tile)
+        self._solver    : Solver     = None #Solver(maze_shape=Helper.get_world_arr_shape(), goal_tile= self._goal_tile)
         self._plotter   : OccGrid    = OccGrid(map_dims_in_meter=Helper.get_total_map_dim_in_meter())
         self._point_navigator   :PointNavigator  = PointNavigator()
 
@@ -85,16 +85,32 @@ class MetaController(Node):
                timeout=rclpy.duration.Duration(seconds=0.2)
            )
            self._point_navigator.set_globa_to_local_tf(tf)
-           self.get_logger().info(f'tf reset succsessfully{tf}')
         except tf2_ros.LookupException:
             return None
-        
-    
+
+
     def _create_goal_sub(self):
         '''
         TODO
         '''
-        pass
+        self._goal_subscription = self.create_subscription(
+            PointStamped,
+            '/goal_point',
+            self._on_goal_data,
+            self._on_goal_data
+        )
+    def _on_goal_data(self, msg: PointStamped):
+        if not self._goal_tile is None: return
+        point_np = np.array([
+            msg.point.x,
+            msg.point.y,
+            msg.point.z
+        ], dtype=np.float64)
+    
+        self._goal_tile = Helper.world_to_tile_single(point_np)
+        self._solver = Solver(maze_shape=Helper.get_world_arr_shape(), goal_tile= self._goal_tile)
+        self.get_logger().info(f"Goal received: {point_np}")
+
 
     # lidar stuff ======================================================================================================
     def _create_lidar_sub(self):
@@ -125,10 +141,6 @@ class MetaController(Node):
             sm[Helper.world_to_tile_single(current_coord)] += 10
 
         sm[self._current_tile] += 10
-        self.get_logger().info(f"current tile {self._current_tile}")
-        self.get_logger().info(f"current max {np.max(sm)}")
-
-
         self._plotter.display(sm.T)
         self._replot_flag = False
 
@@ -141,7 +153,7 @@ class MetaController(Node):
         if self._latest_lidar_msg is None: return
         msg = self._latest_lidar_msg
         current_coord= self._point_navigator.current_global_coord_offset + Helper.tile_to_world_single(Helper.get_starting_tile())
-        self.get_logger().info(f'lidar rang {np.max(np.array(msg.ranges))}')
+        # self.get_logger().info(f'lidar rang {np.max(np.array(msg.ranges))}')
         self._replot_flag = self._solver.account_for_geometry(Helper.get_tiles_from_lidar_data_raw(raw_lidar_data=np.array(msg.ranges),
                                                                                                    current_coord= current_coord,
                                                                                                    current_heading=self._point_navigator.current_global_heading))
@@ -156,6 +168,7 @@ class MetaController(Node):
         '''
         if self._goal_tile is None: return False
         if self._current_tile is None: return False
+        if self._solver is None: return False
         return True
 
     def _tick(self):
@@ -182,11 +195,9 @@ class MetaController(Node):
         self._point_navigator.tick()
         self._send_action_goal()
 
-        self.get_logger().info(f'rotation {self._point_navigator.current_global_heading}')
-        self.get_logger().info(f'local wp {self._point_navigator._current_waypoint_local}')
-        self.get_logger().info(f'local wp {self._point_navigator._current_waypoint_local}')
-        
-
+        # self.get_logger().info(f'rotation {self._point_navigator.current_global_heading}')
+        # self.get_logger().info(f'local wp {self._point_navigator._current_waypoint_local}')
+        # self.get_logger().info(f'local wp {self._point_navigator._current_waypoint_local}')
 
 
 def main(args=None) -> None:

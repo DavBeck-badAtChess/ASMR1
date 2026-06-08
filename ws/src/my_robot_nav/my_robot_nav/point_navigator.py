@@ -36,7 +36,7 @@ class PointNavigator:
         self._current_waypoint: np.ndarray = None
         self._current_waypoint_local: np.ndarray = None
         self._current_heading: float = None 
-        self._current_global_coord_offset: np.ndarray = None #TODO USE THIS LATER
+        self._current_global_coord_offset: np.ndarray = None
 
         self._rot_acc:float = 1.0
         self._lin_acc:float = 0.2

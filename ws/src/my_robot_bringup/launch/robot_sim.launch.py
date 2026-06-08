@@ -55,6 +55,8 @@ def generate_launch_description():
                 '-topic', 'robot_description',
                 '-name', 'my_robot',
                 '-z', '0.1',
+                '-x', '1',
+                '-y', '3',
             ],
         ),
         Node(
