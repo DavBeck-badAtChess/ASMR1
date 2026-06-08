@@ -101,19 +101,28 @@ class MetaController(Node):
     def _on_lidar_data(self, msg):
         # raw_lidar_data = np.array(msg.ranges)
         # self.get_logger().info('getting lidar data')
-        fx, fy = 0.0, 0.0
+        fx_robot, fy_robot = 0.0, 0.0
         for i, distance in enumerate(msg.ranges):
             if not (msg.range_min < distance < msg. range_max):
                 continue
-                if distance > self.INFLUENCE_DISTANCE:
-                    continue
+            if distance > self.INFLUENCE_DISTANCE:
+                continue
 
             angle = msg.angle_min + i * msg.angle_increment
 
             magnitude = self.K_REP * (1.0/distance - 1.0/self.INFLUENCE_DISTANCE) * (1.0/distance**2)
 
-            fx -= magnitude * math.cos(angle)
-            fy -= magnitude * math.sin(angle)
+            fx_robot -= magnitude * math.cos(angle)
+            fy_robot -= magnitude * math.sin(angle)
+
+        fx, fy = 0.0, 0.0
+        if self._robot_yaw is not None:
+            cos_yaw = math.cos(self._robot_yaw)
+            sin_yaw = math.sin(self._robot_yaw)
+
+            # rotate into world frame
+            fx = fx_robot * cos_yaw - fy_robot * sin_yaw
+            fy = fx_robot * sin_yaw + fy_robot * cos_yaw
 
         self._rep_force = (fx, fy)
                 
