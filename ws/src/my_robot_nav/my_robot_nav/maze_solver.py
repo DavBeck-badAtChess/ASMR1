@@ -206,7 +206,7 @@ class Solver:
         inf = np.ones(self._maze.shape)
         inf[self._maze] += 1
         inf[self._maze_soft] += 1
-        inf[~self._path_mask] += 1
+        inf[~self._path_mask] += 5
         return inf * 10
 
     @property

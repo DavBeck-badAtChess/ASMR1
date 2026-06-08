@@ -11,7 +11,8 @@ def generate_launch_description():
         [FindPackageShare('my_robot_description'), 'urdf', 'my_robot.urdf.xacro']
     )
     world_path = PathJoinSubstitution(
-        [FindPackageShare('my_robot_bringup'), 'worlds', 'wall_world.sdf']
+        #[FindPackageShare('my_robot_bringup'), 'worlds', 'wall_world.sdf']
+        [FindPackageShare('my_robot_bringup'), 'worlds', 'obstacle_world.sdf']
     )
     bridge_config = PathJoinSubstitution(
         [FindPackageShare('my_robot_bringup'), 'config', 'bridge.yaml']

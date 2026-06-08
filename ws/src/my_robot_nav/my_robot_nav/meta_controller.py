@@ -34,7 +34,7 @@ class MetaController(Node):
         self._tf_listener = tf2_ros.TransformListener(self._tf_buffer, self)
 
 
-        self._goal_tile : int[int,int]  = Helper.world_to_tile_single(np.ndarray([10,10]))# TODO i need the goal thingy to verify this
+        self._goal_tile : int[int,int]  = Helper.world_to_tile_single(np.array([5,5]))# TODO i need the goal thingy to verify this
         self._current_tile  :int[int,int]    = Helper.get_starting_tile()
 
         self._solver    : Solver     = Solver(maze_shape=Helper.get_world_arr_shape(), goal_tile= self._goal_tile)
