@@ -60,6 +60,7 @@ class MetaController(Node):
         self._timer = self.create_timer(
             MetaController.TICK_HZ, self._tick
         )
+        self.get_logger().info('meta controller ready')
 
     
     # movement node stuff ======================================================================================================

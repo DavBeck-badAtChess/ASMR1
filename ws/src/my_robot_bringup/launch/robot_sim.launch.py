@@ -4,6 +4,7 @@ from launch.actions import ExecuteProcess
 from launch.substitutions import Command, PathJoinSubstitution
 from launch_ros.substitutions import FindPackageShare
 from launch_ros.parameter_descriptions import ParameterValue
+from launch.actions import TimerAction
 
 
 def generate_launch_description():
@@ -85,17 +86,23 @@ def generate_launch_description():
         ),
 
 
-        Node(# add the goal checker nodek
-            package='my_robot_perception',
-            executable='goal_checker_node',
-            name='goal_checker_node',
-            
-        parameters=[{
-            'goal_x': 10.0,
-            'goal_y': 3.0,
-            'goal_threshold': 0.3
-            }],
-            output='screen'
-        ),
+        
+        TimerAction(
+            period=5.0,
+            actions=[
+                Node(# add the goal checker nodek
+                    package='my_robot_perception',
+                    executable='goal_checker_node',
+                    name='goal_checker_node',
+
+                    parameters=[{
+                        'goal_x': 10.0,
+                        'goal_y': 3.0,
+                        'goal_threshold': 0.3
+                        }],
+                    output='screen'
+                ),
+            ]
+        )
 
     ])
