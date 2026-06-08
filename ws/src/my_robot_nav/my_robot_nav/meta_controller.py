@@ -24,6 +24,8 @@ class MetaController(Node):
     K_ATT = 0.1
     K_REP = 0.5
     INFLUENCE_DISTANCE = 2.0
+    MAX_LINEAR = 0.5
+    MAX_ANGULAR = 1.0
 
     '''
     this is where the action happens. 
@@ -145,8 +147,8 @@ class MetaController(Node):
         magnitude = math.sqrt(fx**2 + fy**2)
 
         goal = SetVelocity.Goal()
-        goal.linear_x = magnitude * 0.5
-        goal.angular_z = error_angle * 1.0
+        goal.linear_x = min(magnitude * 0.5, self.MAX_LINEAR)
+        goal.angular_z = max(-self.MAX_ANGULAR, min(error_angle * 1.0, self.MAX_ANGULAR))
         return goal
 
 def point_stamp_to_coordinate(msg) -> tuple:
