@@ -21,7 +21,7 @@ from my_robot_interfaces.action import SetVelocity # this is the action defined 
 
 class MetaController(Node):
 
-    K_ATT = 0.1
+    K_ATT = 0.5
     K_REP = 0.5
     INFLUENCE_DISTANCE = 2.0
     MAX_LINEAR = 0.5
@@ -88,9 +88,12 @@ class MetaController(Node):
         self._robot_pos = get_position(msg)
         self._robot_yaw = get_yaw(msg)
         if self._goal_pos != None:
+            dx = (self._goal_pos[0] - self._robot_pos[0])
+            dy = (self._goal_pos[1] - self._robot_pos[1])
+            distance = math.sqrt(dx**2 + dy**2)
             self._att_force = (
-                self.K_ATT * (self._goal_pos[0] - self._robot_pos[0]),
-                self.K_ATT * (self._goal_pos[1] - self._robot_pos[1])
+                self.K_ATT * dx / distance,
+                self.K_ATT * dy / distance
             )
             total_force = (
                 self._att_force[0] + self._rep_force[0],
