@@ -18,6 +18,9 @@ from my_robot_interfaces.action import SetVelocity # this is the action defined 
 
 
 class MetaController(Node):
+
+    K_ATT = 0.5
+
     '''
     this is where the action happens. 
     this listens to all the nodes of interest, and commands the output (ie uses nodes to manipulate).
@@ -31,6 +34,7 @@ class MetaController(Node):
         '''
         self._robot_pos: tuple = None
         self._goal_pos: tuple = None
+        self._att_force = None
 
 
         # subscribing to lidar
@@ -74,7 +78,12 @@ class MetaController(Node):
         
     def _on_odom_data(self, msg):
         self._robot_pos = get_position(msg)
-        # self.get_logger().debug(f"getting odom data of robot: {self._robot_pos}")
+        if self._goal_pos != None:
+            self._att_force = (
+                self.K_ATT * (self._goal_pos[0] - self._robot_pos[0]),
+                self.K_ATT * (self._goal_pos[1] - self._robot_pos[1])
+            )
+            self.get_logger().info(f"set force to  {self._att_force}")
 
     def _on_lidar_data(self, msg):
         # raw_lidar_data = np.array(msg.ranges)
