@@ -16,7 +16,7 @@ from my_robot_interfaces.action import SetVelocity # this is the action defined 
 
 class PointNavigator:
 
-    MAX_LIN_SPEED:float = 1.0
+    MAX_LIN_SPEED:float = 0.5
     MAX_ROT_SPEED:float = 1.0
     CLOSNESS_THREASHOLD:float = 0.2
 
@@ -33,11 +33,10 @@ class PointNavigator:
     def __init__(self):
         '''
         '''
-
         self._current_waypoint: np.ndarray = None
         self._current_waypoint_local: np.ndarray = None
         self._current_heading: float = None 
-        self._current_coord_global: np.ndarray = None #TODO USE THIS LATER
+        self._current_global_coord_offset: np.ndarray = None #TODO USE THIS LATER
 
         self._rot_acc:float = 1.0
         self._lin_acc:float = 0.2
@@ -69,36 +68,38 @@ class PointNavigator:
         this sets the global position of the robot, ie how faar has it moved from the beginning.
         since it starts at 00, i can just transform 00 to local, and take the negative of that
         '''
-        self.current_global_coord_offset = -self._make_local(np.array([0,0]))
+        self._current_global_coord_offset = -self._make_local(np.array([0,0]))
 
-    def _update_action_goal_dis(self):
-
-        current_heading = self._get_local_heading()
-
-        diff = np.arctan2(
-            np.sin(
-                np.arctan2(
-                    self._current_waypoint_local[1],
-                    self._current_waypoint_local[0]
-                ) - current_heading
-            ),
-            np.cos(
-                np.arctan2(
-                    self._current_waypoint_local[1],
-                    self._current_waypoint_local[0]
-                ) - current_heading
-            )
+    def _update_action_goal(self):
+        target_heading = np.arctan2(
+            self._current_waypoint_local[1],
+            self._current_waypoint_local[0]
         )
 
-        rot_speed = np.clip(diff * 1.5, -1.0, 1.0)
+        heading_error = np.arctan2(
+            np.sin(target_heading - self._current_heading),
+            np.cos(target_heading - self._current_heading)
+        )
 
-        distance = np.linalg.norm(self._current_waypoint_local)
-        lin_speed = np.clip(distance * 0.5, 0, 1.0)
+        rot_speed = np.clip(
+            heading_error * self._rot_acc,
+            -PointNavigator.MAX_ROT_SPEED,
+            PointNavigator.MAX_ROT_SPEED
+        )
+
+        
+        heading_factor = max(np.cos(heading_error), 0.0)
+
+        lin_speed = np.clip(
+            heading_factor * PointNavigator.MAX_LIN_SPEED,
+            0.0,
+            PointNavigator.MAX_LIN_SPEED
+        )
 
         self._goal.angular_z = rot_speed
         self._goal.linear_x = lin_speed
 
-    def _update_action_goal(self):
+    def _update_action_goal_dis(self):
         '''
         calculate the next direction, and based on that the sensible speed.
         if the to drive direction is orthogonal, then prioritize rotation, and slow down.
@@ -188,7 +189,7 @@ class PointNavigator:
 
     @property
     def lidar_data_usable(self)->bool:
-        if self._current_coord_global is None: return False
+        if self._current_global_coord_offset is None: return False
         if self._current_heading is None: return False
         return True
 
@@ -206,7 +207,7 @@ class PointNavigator:
     
     @property
     def current_global_coord_offset(self)-> np.ndarray:
-        return self.current_global_coord_offset
+        return self._current_global_coord_offset
     
     @property
     def current_global_heading(self)-> float:

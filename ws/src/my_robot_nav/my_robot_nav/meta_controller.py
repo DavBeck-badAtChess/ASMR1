@@ -34,7 +34,7 @@ class MetaController(Node):
         self._tf_listener = tf2_ros.TransformListener(self._tf_buffer, self)
 
 
-        self._goal_tile : int[int,int]  = (100,150)# TODO i need the goal thingy to verify this
+        self._goal_tile : int[int,int]  = Helper.world_to_tile_single(np.ndarray([10,10]))# TODO i need the goal thingy to verify this
         self._current_tile  :int[int,int]    = Helper.get_starting_tile()
 
         self._solver    : Solver     = Solver(maze_shape=Helper.get_world_arr_shape(), goal_tile= self._goal_tile)
@@ -58,7 +58,7 @@ class MetaController(Node):
             self.get_logger().info('service set velocity not available, waiting again...')
 
         self._timer = self.create_timer(
-            1.0 / MetaController.TICK_HZ, self._tick
+            MetaController.TICK_HZ, self._tick
         )
 
     
@@ -117,8 +117,19 @@ class MetaController(Node):
         call this to synch the vis map.
         use up the flag here
         '''
-        if not self._replot_flag: return
-        self._plotter.display(self._solver.informational_map)
+        #if not self._replot_flag: return
+        sm = self._solver.informational_map
+        if self._point_navigator.lidar_data_usable:
+            current_coord= self._point_navigator.current_global_coord_offset + Helper.tile_to_world_single(Helper.get_starting_tile())
+            current_coord = -current_coord
+            sm[Helper.world_to_tile_single(current_coord)] += 10
+
+        sm[self._current_tile] += 10
+        self.get_logger().info(f"current tile {self._current_tile}")
+        self.get_logger().info(f"current max {np.max(sm)}")
+
+
+        self._plotter.display(sm.T)
         self._replot_flag = False
 
 
@@ -129,7 +140,7 @@ class MetaController(Node):
         '''
         if self._latest_lidar_msg is None: return
         msg = self._latest_lidar_msg
-        current_coord= self._point_navigator.current_global_coord_offset + Helper.tile_to_world(Helper.get_starting_tile())
+        current_coord= self._point_navigator.current_global_coord_offset + Helper.tile_to_world_single(Helper.get_starting_tile())
         self.get_logger().info(f'lidar rang {np.max(np.array(msg.ranges))}')
         self._replot_flag = self._solver.account_for_geometry(Helper.get_tiles_from_lidar_data_raw(raw_lidar_data=np.array(msg.ranges),
                                                                                                    current_coord= current_coord,
@@ -171,7 +182,7 @@ class MetaController(Node):
         self._point_navigator.tick()
         self._send_action_goal()
 
-        self.get_logger().info(f'rotation {self._point_navigator._get_local_heading()}')
+        self.get_logger().info(f'rotation {self._point_navigator.current_global_heading}')
         self.get_logger().info(f'local wp {self._point_navigator._current_waypoint_local}')
         self.get_logger().info(f'local wp {self._point_navigator._current_waypoint_local}')
         
