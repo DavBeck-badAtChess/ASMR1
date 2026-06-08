@@ -120,7 +120,8 @@ class Solver:
             new_geometry_tiles[:, 0],
             new_geometry_tiles[:, 1]
         ] = True
-        if np.all(new_geometry_mask | self._maze):# see if new_geometry_mask -> self._maze
+        #if np.all(new_geometry_mask | self._maze):# see if new_geometry_mask -> self._maze
+        if True:# see if new_geometry_mask -> self._maze
             self._maze[
                 new_geometry_tiles[:, 0],
                 new_geometry_tiles[:, 1]
@@ -172,7 +173,10 @@ class Solver:
         self._maze_soft_solved[self._maze_soft_solved > 0] = self._MAXIMUM_DIST
         self._maze_soft_solved[self._goal_tile[0], self._goal_tile[1]] = 1
         found:bool = False
+        i = 0
         while not found:
+            i += 1
+            if i > 5000: return
             tiles_to_search_next: set[int] = set()
             for tile in tiles_to_search:
                 curr_val = self._maze_soft_solved[tile]

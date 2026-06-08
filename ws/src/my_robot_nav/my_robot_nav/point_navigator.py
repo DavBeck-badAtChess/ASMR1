@@ -14,6 +14,7 @@ from my_robot_interfaces.action import SetVelocity # this is the action defined 
 #import tf_transformations
 
 
+
 class PointNavigator:
 
     MAX_LIN_SPEED:float = 0.5
@@ -25,8 +26,9 @@ class PointNavigator:
         '''
         many things are assumed in order to tick. this is a quick debug ish function 
         '''
-        if self._globa_to_local_tf is None: return False
         if self._current_waypoint is None: return False
+        if self._current_global_coord is None: return False
+        if self._current_heading is None: return False
         return True
 
 
@@ -34,46 +36,37 @@ class PointNavigator:
         '''
         '''
         self._current_waypoint: np.ndarray = None
-        self._current_waypoint_local: np.ndarray = None
+        #self._current_waypoint_local: np.ndarray = None
+        
+        self._current_global_coord: np.ndarray = None
         self._current_heading: float = None 
-        self._current_global_coord_offset: np.ndarray = None
 
         self._rot_acc:float = 1.0
-        self._lin_acc:float = 0.2
+        self._lin_acc:float = 0.0#0.2
 
         self._goal = SetVelocity.Goal()
         self._goal.linear_x = 0.0
         self._goal.angular_z = 0.0
-        self._globa_to_local_tf = None
 
         self._waypoint_reached = True
 
+    def set_global_positions(self, global_pos: np.ndarray, heading:float):
+        self._current_global_coord = global_pos
+        self._current_heading = heading
 
     def _check_if_waypoint_is_reached(self):
-        self._waypoint_reached = np.linalg.norm(self._current_waypoint_local) < PointNavigator.CLOSNESS_THREASHOLD
+        robot_to_waypoint = self._current_waypoint - self._current_global_coord
+        self._waypoint_reached = np.linalg.norm(robot_to_waypoint) < PointNavigator.CLOSNESS_THREASHOLD
 
 
-    def _update_local_waypoint(self):
-        '''
-        update the current local goal, assume that the transform is local.
-        '''
-        self._current_waypoint_local = self._make_local(self._current_waypoint)
 
-
-    def _update_current_global_heading(self):
-        self._current_heading = self._globa_to_local_tf.transform.rotation.z
-    
-    def _update_current_global_coord_offset(self):
-        '''
-        this sets the global position of the robot, ie how faar has it moved from the beginning.
-        since it starts at 00, i can just transform 00 to local, and take the negative of that
-        '''
-        self._current_global_coord_offset = -self._make_local(np.array([0,0]))
 
     def _update_action_goal(self):
+
+        robot_to_waypoint = self._current_waypoint - self._current_global_coord
         target_heading = np.arctan2(
-            self._current_waypoint_local[1],
-            self._current_waypoint_local[0]
+            robot_to_waypoint[1],
+            robot_to_waypoint[0]
         )
 
         heading_error = np.arctan2(
@@ -86,8 +79,6 @@ class PointNavigator:
             -PointNavigator.MAX_ROT_SPEED,
             PointNavigator.MAX_ROT_SPEED
         )
-
-        
         heading_factor = max(np.cos(heading_error), 0.0)
 
         lin_speed = np.clip(
@@ -146,10 +137,6 @@ class PointNavigator:
         '''
        
         if not self._ready_to_tick: return 
-
-        self._update_local_waypoint()
-        self._update_current_global_heading()
-        self._update_current_global_coord_offset()
         self._update_action_goal()
         self._check_if_waypoint_is_reached()
 
@@ -168,28 +155,10 @@ class PointNavigator:
         '''
 
 
-    def set_globa_to_local_tf(self, tf ):
-        self._globa_to_local_tf = tf 
-
-
-    def _make_local(self, global_point:np.ndarray)->np.ndarray:
-        '''
-        takes a global point, and converts into local coords.
-        '''
-        point_glob = PointStamped()
-        #point_glob.header.frame_id = "odom"  # this point is global
-        point_glob.header.frame_id = "map"  # this point is global
-        point_glob.header.stamp = rclpy.time.Time() # right now
-        point_glob.point.x = global_point[0]
-        point_glob.point.y = global_point[1]
-        point_glob.point.z = 0
-        point_local = tf2_geometry_msgs.do_transform_point(point_glob, self._globa_to_local_tf)
-        return np.array([point_local.point.x,point_local.point.y])
-
 
     @property
     def lidar_data_usable(self)->bool:
-        if self._current_global_coord_offset is None: return False
+        if self._current_global_coord is None: return False
         if self._current_heading is None: return False
         return True
 
@@ -207,7 +176,7 @@ class PointNavigator:
     
     @property
     def current_global_coord_offset(self)-> np.ndarray:
-        return self._current_global_coord_offset
+        return self._current_global_coord
     
     @property
     def current_global_heading(self)-> float:

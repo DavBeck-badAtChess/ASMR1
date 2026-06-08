@@ -19,6 +19,8 @@ from geometry_msgs.msg import PointStamped
 from sensor_msgs.msg import LaserScan
 from my_robot_interfaces.action import SetVelocity # this is the action defined by the provided movement controller, the topic is /set_velocity
 from rclpy.executors import MultiThreadedExecutor
+from nav_msgs.msg import Odometry
+from my_robot_perception.odom_utils import get_position, get_yaw
 
 class MetaController(Node):
     '''
@@ -26,12 +28,12 @@ class MetaController(Node):
     this listens to all the nodes of interest, and commands the output (ie uses nodes to manipulate).
     this is does not directly send any signals, it is just a controller.
     '''
-    TICK_HZ = 10.0
+    TICK_HZ = 10.00
 
     def __init__(self, name:str):
         super().__init__(name)
-        self._tf_buffer = tf2_ros.Buffer()
-        self._tf_listener = tf2_ros.TransformListener(self._tf_buffer, self)
+        # self._tf_buffer = tf2_ros.Buffer()
+        # self._tf_listener = tf2_ros.TransformListener(self._tf_buffer, self)
 
 
         self._goal_tile : int[int,int]  =None# Helper.world_to_tile_single(np.array([5,5]))# TODO i need the goal thingy to verify this
@@ -49,6 +51,14 @@ class MetaController(Node):
         self._lidar_subscription = None
         self._create_lidar_sub()
 
+        # subscribe to /odom
+        self._latest_odom_msg = None
+        self._odom_subscription = None
+        self._odom_subscription()
+        self._heading_glob:float = None
+        self._pos_glob:np.ndarray = None
+
+
         self._replot_flag : bool = True
 
         # movement ------------------------
@@ -58,7 +68,7 @@ class MetaController(Node):
             self.get_logger().info('service set velocity not available, waiting again...')
 
         self._timer = self.create_timer(
-            MetaController.TICK_HZ, self._tick
+            1 / MetaController.TICK_HZ, self._tick
         )
         self.get_logger().info('meta controller ready')
 
@@ -67,6 +77,22 @@ class MetaController(Node):
     def _send_action_goal(self):
         self._movement_client.send_goal_async(self._point_navigator.action_goal)
 
+    def _create_goal_sub(self):
+        self._odom_subscription = self.create_subscription(
+            Odometry,
+            '/odom',
+            self._on_odom_data,
+            10
+        )
+    def _on_odom_data(self, msg):
+        self._latest_odom_msg = msg
+    
+    def _update_global_positions(self):
+        pos_t = get_position(self._latest_odom_msg)
+        self._robot_coord = np.array(pos_t[0], pos_t[0])
+        self._robot_heading = get_yaw(self._latest_odom_msg)
+
+
     # goal node stuff ======================================================================================================
     def _on_goal_reached_send(self, msg):
         '''
@@ -74,20 +100,20 @@ class MetaController(Node):
         '''
         self._goal_msg_recieved = True
 
-    def _update_globa_to_local_tf_of_point_nav(self):
-        '''
-        provides the tf to transform global into local
-        '''
-        try:
-           tf = self._tf_buffer.lookup_transform(
-               "odom",   # source frame
-               "base_link",   # source frame
-                rclpy.time.Time(),   # latest available transform
-               timeout=rclpy.duration.Duration(seconds=0.2)
-           )
-           self._point_navigator.set_globa_to_local_tf(tf)
-        except tf2_ros.LookupException:
-            return None
+    # def _update_globa_to_local_tf_of_point_nav(self):
+    #     '''
+    #     provides the tf to transform global into local
+    #     '''
+    #     try:
+    #        tf = self._tf_buffer.lookup_transform(
+    #            "odom",   # source frame
+    #            "base_link",   # source frame
+    #             rclpy.time.Time(),   # latest available transform
+    #            timeout=rclpy.duration.Duration(seconds=0.1)
+    #        )
+    #        self._point_navigator.set_globa_to_local_tf(tf)
+    #     except tf2_ros.LookupException:
+    #         return None
 
 
     def _create_goal_sub(self):
@@ -101,7 +127,6 @@ class MetaController(Node):
             10
         )
     def _on_goal_data(self, msg: PointStamped):
-        self.get_logger().info(f"Goal received: {point_np}")
         if not self._goal_tile is None: return
         point_np = np.array([
             msg.point.x,
@@ -110,6 +135,7 @@ class MetaController(Node):
         ], dtype=np.float64)
         self._goal_tile = Helper.world_to_tile_single(point_np)
         self._solver = Solver(maze_shape=Helper.get_world_arr_shape(), goal_tile= self._goal_tile)
+        #self._solver.account_for_geometry(np.ndarray())
 
 
     # lidar stuff ======================================================================================================
@@ -152,11 +178,11 @@ class MetaController(Node):
         '''
         if self._latest_lidar_msg is None: return
         msg = self._latest_lidar_msg
-        current_coord= self._point_navigator.current_global_coord_offset + Helper.tile_to_world_single(Helper.get_starting_tile())
+        #current_coord=# self._point_navigator.current_global_coord_offset + Helper.tile_to_world_single(Helper.get_starting_tile())
         # self.get_logger().info(f'lidar rang {np.max(np.array(msg.ranges))}')
         self._replot_flag = self._solver.account_for_geometry(Helper.get_tiles_from_lidar_data_raw(raw_lidar_data=np.array(msg.ranges),
-                                                                                                   current_coord= current_coord,
-                                                                                                   current_heading=self._point_navigator.current_global_heading))
+                                                                                                   current_coord= self._robot_coord,
+                                                                                                   current_heading=self._robot_heading))
         self._latest_lidar_msg = None
 
 
@@ -175,6 +201,7 @@ class MetaController(Node):
         '''
         here i need to define all the actions, that need to be done in one tick. this needs to be driven by a clock.
         '''
+        self._update_global_positions()
         if not self._ready_to_tick: return
 
         if self._goal_msg_recieved:
@@ -186,7 +213,8 @@ class MetaController(Node):
         
         self._synch_map()
 
-        self._update_globa_to_local_tf_of_point_nav()
+        #self._update_globa_to_local_tf_of_point_nav()
+        self._point_navigator.set_global_positions(global_pos=self._robot_coord, heading=self._robot_heading)
         if self._point_navigator.waypoint_reached:
             self._current_tile = self._solver.get_next_tile(tile_position=self._current_tile)
             self._point_navigator.set_new_waypoint(waypoint= Helper.tile_to_world_single(self._current_tile))
@@ -195,7 +223,8 @@ class MetaController(Node):
         self._point_navigator.tick()
         self._send_action_goal()
 
-        # self.get_logger().info(f'rotation {self._point_navigator.current_global_heading}')
+        self.get_logger().info(f'rotation {self._robot_heading}')
+        #self.get_logger().info(f'pos {self._point_navigator.current_global_coord_offset}')
         # self.get_logger().info(f'local wp {self._point_navigator._current_waypoint_local}')
         # self.get_logger().info(f'local wp {self._point_navigator._current_waypoint_local}')
 
