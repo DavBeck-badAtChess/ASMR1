@@ -15,6 +15,7 @@ from rclpy.node import Node
 from geometry_msgs.msg import PointStamped
 from sensor_msgs.msg import LaserScan
 from nav_msgs.msg import Odometry
+from std_msgs.msg import Bool
 from my_robot_perception.odom_utils import get_position, get_yaw
 from my_robot_interfaces.action import SetVelocity # this is the action defined by the provided movement controller, the topic is /set_velocity
 
@@ -44,7 +45,7 @@ class MetaController(Node):
         self._att_force = (0, 0)
         self._rep_force = (0, 0)
 
-        time.sleep(10.0) # waiting for rviz and gazebo to load
+        # time.sleep(10.0) # waiting for rviz and gazebo to load
         # subscribing to lidar
         self._lidar_subscription = self.create_subscription(
             LaserScan,
@@ -62,6 +63,14 @@ class MetaController(Node):
             PointStamped,
             '/goal_point',
             self._on_goal_data,
+            latched_qos
+        )
+
+        # subscribinng to goal_reached
+        self._goal_reached_subscription = self.create_subscription(
+            Bool,
+            '/goal_reached',
+            self._on_goal_reached,
             latched_qos
         )
 
@@ -83,6 +92,14 @@ class MetaController(Node):
             self._on_odom_data,
             10
         )
+
+    def _on_goal_reached(self, msg) :
+        if msg.data:
+            self._goal_pos = None # breaks odom-loop
+            goal = SetVelocity.Goal()
+            self._movement_client.send_goal_async(goal, self._temporary_feedback_function)
+            self.get_logger().info(f"Goal reached, sending 0-goal to stop.")
+            
         
     def _on_odom_data(self, msg):
         self._robot_pos = get_position(msg)
