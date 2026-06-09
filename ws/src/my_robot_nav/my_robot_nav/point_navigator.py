@@ -16,8 +16,8 @@ from my_robot_interfaces.action import SetVelocity # this is the action defined 
 class PointNavigator:
 
     MAX_LIN_SPEED:float = 0.3
-    MAX_ROT_SPEED:float = 2.0
-    CLOSNESS_THREASHOLD:float = 0.3
+    MAX_ROT_SPEED:float = 0.6
+    CLOSNESS_THREASHOLD:float = 0.6
     '''
     if the current rotation rate is to high, lidar data is likely to be offset significantly.
     i do not want to limit the rotation rate of the robot to much though,

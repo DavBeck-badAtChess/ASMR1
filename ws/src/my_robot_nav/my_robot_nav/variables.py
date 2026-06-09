@@ -2,7 +2,7 @@
 some used constants.
 '''
 
-ROBOT_WIDTH = 0.2
+ROBOT_WIDTH = 0.3
 
 TILE_WIDTH = ROBOT_WIDTH 
 MAX_DISTANCE = 15
