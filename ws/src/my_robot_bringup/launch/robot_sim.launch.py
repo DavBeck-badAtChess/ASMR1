@@ -96,8 +96,8 @@ def generate_launch_description():
                     name='goal_checker_node',
 
                     parameters=[{
-                        'goal_x': 10.0,
-                        'goal_y': 3.0,
+                        'goal_x': 9.0,
+                        'goal_y': 0.0,
                         'goal_threshold': 0.3
                         }],
                     output='screen'

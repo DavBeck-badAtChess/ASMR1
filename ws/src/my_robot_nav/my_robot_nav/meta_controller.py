@@ -21,6 +21,7 @@ from my_robot_interfaces.action import SetVelocity # this is the action defined 
 from rclpy.executors import MultiThreadedExecutor
 from nav_msgs.msg import Odometry
 from my_robot_perception.odom_utils import get_position, get_yaw
+from rclpy.qos import DurabilityPolicy, HistoryPolicy, QoSProfile, ReliabilityPolicy
 
 class MetaController(Node):
     '''
@@ -29,7 +30,7 @@ class MetaController(Node):
     this is does not directly send any signals, it is just a controller.
     '''
     TICK_HZ = 10.00
-    ROTATION_TH = 0.5
+    ROTATION_TH = 0.3
 
     def __init__(self, name:str):
         super().__init__(name)
@@ -40,6 +41,13 @@ class MetaController(Node):
         self._plotter   : OccGrid    = OccGrid(map_dims_in_meter=Helper.get_total_map_dim_in_meter())
         self._point_navigator   :PointNavigator  = PointNavigator()
 
+        latched_qos = QoSProfile(
+            depth=1,
+            history=HistoryPolicy.KEEP_LAST,
+            reliability=ReliabilityPolicy.RELIABLE,
+            durability=DurabilityPolicy.TRANSIENT_LOCAL,
+        )
+
         # subscribe to goal
         self._goal_msg_recieved:bool = False
         self._goal_subscription = None
@@ -47,7 +55,7 @@ class MetaController(Node):
             PointStamped,
             '/goal_point',
             self._on_goal_data,
-            10
+            latched_qos,
         )
 
         # subscribe to lidar
@@ -132,10 +140,11 @@ class MetaController(Node):
         '''
         #if not self._replot_flag: return
         sm = self._solver.informational_map
-        if self._point_navigator.lidar_data_usable:
-            current_coord= self._point_navigator.current_global_coord_offset + Helper.tile_to_world_single(Helper.get_starting_tile())
-            current_coord = -current_coord
-            sm[Helper.world_to_tile_single(current_coord)] += 10
+        
+        
+        sm[self._current_tile] += 10
+            
+
 
         sm[self._current_tile] += 10
         self._plotter.display(sm.T)
@@ -163,6 +172,8 @@ class MetaController(Node):
         if self._goal_tile is None: return False
         if self._current_tile is None: return False
         if self._solver is None: return False
+        if self._latest_odom_msg is None: return False
+        if self._latest_lidar_msg is None: return False
         return True
 
 
@@ -170,6 +181,7 @@ class MetaController(Node):
         '''
         here i need to define all the actions, that need to be done in one tick. this needs to be driven by a clock.
         '''
+        self.get_logger().info('tick')
         if not self._ready_to_tick: return
 
         if self._goal_msg_recieved:
