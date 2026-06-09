@@ -2,7 +2,6 @@ from __future__ import annotations
 import sys
 sys.dont_write_bytecode = True
 import numpy as np 
-from enum import Enum
 
 
 class Solver:
@@ -114,7 +113,7 @@ class Solver:
         i = 0
         while not found:
             i += 1
-            if i > 5000: return # prevent endless loop
+            if i > 300: return # prevent endless loop
             tiles_to_search_next: set[int] = set()
             for tile in tiles_to_search:
                 curr_val = self._maze_soft_solved[tile]

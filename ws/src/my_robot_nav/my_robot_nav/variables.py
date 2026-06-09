@@ -1,11 +1,11 @@
-ROBOT_WIDTH = 0.4
+'''
+some used constants.
+'''
 
-
-START_COORDS =  (0,0) #defenetly wrong. cant be bothered to look
+ROBOT_WIDTH = 0.2
 
 TILE_WIDTH = ROBOT_WIDTH 
 MAX_DISTANCE = 15
-
 
 LIDAR_MIN_ANG = -3.141592653
 LIDAR_MAX_ANG = 3.141592653
