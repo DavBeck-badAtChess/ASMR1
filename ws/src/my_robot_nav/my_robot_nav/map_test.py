@@ -37,9 +37,6 @@ class OccGrid(Node):
         msg.info.origin.position.z = 0.0
         msg.info.origin.orientation.w = 1.0
         
-         #grid = np.zeros((5, 5), dtype=np.int8)
-         #grid[2, 2] = 100
-         #grid[1, 3] = 50
         
         msg.data = tile_grid.flatten().astype(int).tolist()
          

@@ -5,52 +5,6 @@ import numpy as np
 from enum import Enum
 
 
-#i#mport matplotlib.pyplot as plt
-#from helper import Helper
-
-'''
-TODO 
-the maze should really be a bool map. 
-there needs to be an intermediate maze map, with buffer zones arround the actual obsticals (bool map too).
-other than that, this should be fine
-'''
-
-class DIRECTION(Enum):
-    UP =   (0,np.array([0,1]))
-    DOWN = (1,np.array([0,-1]))
-    RIGHT =  (2, np.array([1.0]))
-    LEFT = (3,np.array([-1,0]))
-
-    def __init__(self, id:int, dir:np.ndarray):
-        super().__init__(id)
-        self._vec_dir:np.ndarray = dir
-
-    @property
-    def vec_dir(self)->np.ndarray:
-        return self._vec_dir
-
-    @staticmethod
-    def resolve_compund_to_vec_dir(compund:set[DIRECTION])->np.ndarray:
-        ret :np.ndarray = np.zeros((2,))
-        for en in compund:
-            ret += en.vec_dir
-        ret /= np.linalg.norm(ret)
-        return ret
-
-    @staticmethod
-    def compund(tile_source:tuple[int,int], tile_target:tuple[int,int])->set[DIRECTION]:
-        compund:set[DIRECTION] = set()
-        if tile_source[0] < tile_target[0]:
-            compund.add(DIRECTION.RIGHT)
-        elif tile_source[0] > tile_target[0]:
-            compund.add(DIRECTION.LEFT)
-        if tile_source[1] < tile_target[1]:
-            compund.add(DIRECTION.UP)
-        elif tile_source[1] > tile_target[1]:
-            compund.add(DIRECTION.DOWN)
-        return compund
-
-
 class Solver:
     @staticmethod
     def get_neigbors(maze:np.ndarray,  idx_tile: tuple[int,int])-> set[tuple[int,int]]:
@@ -86,26 +40,17 @@ class Solver:
         self._maze_soft: np.ndarray = np.ones(maze_shape, dtype=bool)
         self._maze_soft_solved : np.ndarray = np.ones(maze_shape)
         self._path_mask : np.ndarray = np.zeros(maze_shape, dtype=bool)
-        self._dirty_surrounding_flag:bool = True
+        self._dirty_flag:bool = True
 
-    def get_next_direction(self, tile_position:tuple[int,int]) -> set[DIRECTION]:
-        '''
-        check if the maps (paths etc) need to be updated, and returns the DIRECTION compund of the next step
-        '''
-        if self._dirty_surrounding_flag:
-            self._solve_maze(position_tile=tile_position)
-            self._update_path_mask(position_tile=tile_position)
-        target_tile = self._figure_out_next_step(position_tile=tile_position)
-        return DIRECTION.compund(tile_target = target_tile, tile_source=tile_position)
-    
+
     def get_next_tile(self, tile_position:tuple[int,int]) -> tuple[int,int]:
         '''
         check if the maps (paths etc) need to be updated, and returns the DIRECTION compund of the next step
         '''
-        if self._dirty_surrounding_flag:
+        if self._dirty_flag:
             self._solve_maze(position_tile=tile_position)
             self._update_path_mask(position_tile=tile_position)
-        target_tile = self._figure_out_next_step(position_tile=tile_position)
+        target_tile, _ = self._figure_out_next_step(position_tile=tile_position)
         return target_tile
 
     def account_for_geometry(self, new_geometry_tiles:np.ndarray):
@@ -115,36 +60,28 @@ class Solver:
         if the data was not seen before, put it in, recalc the soft map, see if the path is now 
         obstructed and set the flag accordingly
         '''
-        new_information:bool = False
-        new_geometry_mask = np.zeros(self._maze.shape,dtype=bool)
-        new_geometry_mask[
+        self._maze[
             new_geometry_tiles[:, 0],
             new_geometry_tiles[:, 1]
-        ] = True
-        #if np.all(new_geometry_mask | self._maze):# see if new_geometry_mask -> self._maze
-        if True:# see if new_geometry_mask -> self._maze
-            self._maze[
-                new_geometry_tiles[:, 0],
-                new_geometry_tiles[:, 1]
-            ] = False
-            self._update_soft_maze()
-            new_information = True
-        if np.any(self._maze_soft & self._path_mask):
-            self._dirty_surrounding_flag = True
-        return new_information
+        ] = False
 
+        self._update_soft_maze()
+        soft_on_path:np.ndarray = ~self._maze_soft[self.path_mask]
+        if soft_on_path.any():
+            self._dirty_flag = True
 
-    def _figure_out_next_step(self, position_tile: tuple[int,int])-> tuple[tuple[int,int], int]:
+    def _figure_out_next_step(self, position_tile: tuple[int,int])-> tuple[tuple[int,int], bool]:
         """
-        check all the vallid neigbors and return the one with the smolest val. it is assumed, that this is always better than the current one
+        check all the vallid neigbors and return the one with the smolest val. it is assumed, that this is always better than the current one.
+        if nothing is found, the current one is the best
         """
         s = self._MAXIMUM_DIST
-        best_tile:tuple = None
+        best_tile:tuple = position_tile
         for n in Solver.get_neigbors(maze=self._maze_soft_solved, idx_tile=position_tile):
             if self._maze_soft_solved[n] < s:
                 best_tile = n
                 s = self._maze_soft_solved[n]
-        return best_tile
+        return best_tile, best_tile == position_tile
     
     def _update_soft_maze(self):
         '''
@@ -177,7 +114,7 @@ class Solver:
         i = 0
         while not found:
             i += 1
-            if i > 5000: return
+            if i > 5000: return # prevent endless loop
             tiles_to_search_next: set[int] = set()
             for tile in tiles_to_search:
                 curr_val = self._maze_soft_solved[tile]
@@ -201,18 +138,25 @@ class Solver:
         self._path_mask.fill(False)
         while cur_pos != self._goal_tile:
             self._path_mask[cur_pos] = True
-            cur_pos = self._figure_out_next_step(cur_pos)
+            cur_pos, no_progress = self._figure_out_next_step(cur_pos)
+            if no_progress: break # if there is no possible way, stop the path gen
 
     @property
     def informational_map(self)->np.ndarray:
         '''
         return an array containing all the interesting data.
+        just for debugging
         '''
-        inf = np.ones(self._maze.shape)
-        inf[self._maze] += 1
-        inf[self._maze_soft] += 1
-        inf[~self._path_mask] += 5
-        return inf * 10
+        inf = self._maze_soft_solved.copy()
+        fkt = 50 / np.max(inf)
+        inf *=fkt
+        inf += 30
+        inf[~self._maze_soft] = 20
+        inf[~self._maze] = 15
+        inf[self._path_mask] = 0
+
+        return inf.astype(int)
+
 
     @property
     def solved_maze(self)-> np.ndarray:

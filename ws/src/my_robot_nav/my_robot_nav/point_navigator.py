@@ -11,15 +11,19 @@ import tf2_geometry_msgs  # noqa: F401  (registers transform support for PointSt
 from rclpy.action import ActionClient
 from geometry_msgs.msg import PointStamped
 from my_robot_interfaces.action import SetVelocity # this is the action defined by the provided movement controller, the topic is /set_velocity
-#import tf_transformations
-
 
 
 class PointNavigator:
 
-    MAX_LIN_SPEED:float = 0.5
+    MAX_LIN_SPEED:float = 0.3
     MAX_ROT_SPEED:float = 2.0
     CLOSNESS_THREASHOLD:float = 0.3
+    '''
+    if the current rotation rate is to high, lidar data is likely to be offset significantly.
+    i do not want to limit the rotation rate of the robot to much though,
+    to resolve this conflict the lidar data will only be used if the current rotation rate is below this threashold
+    '''
+    ROTATION__LIDAR_TH:float = 0.25
 
     @property
     def _ready_to_tick(self)-> bool:
@@ -35,15 +39,14 @@ class PointNavigator:
 
     def __init__(self):
         '''
+        innit all the necc stuff.
         '''
         self._current_waypoint: np.ndarray = None
-        #self._current_waypoint_local: np.ndarray = None
         
         self._current_global_coord: np.ndarray = None
         self._current_heading: float = None 
 
         self._rot_acc:float = 2.0
-        self._lin_acc:float = 0.0#0.2
 
         self._goal = SetVelocity.Goal()
         self._goal.linear_x = 0.0
@@ -61,6 +64,10 @@ class PointNavigator:
 
 
     def _update_action_goal(self):
+        '''
+        use the current state info to update the action goal
+        '''
+
         robot_to_waypoint = self._current_waypoint - self._current_global_coord
         target_heading = np.arctan2(
             robot_to_waypoint[1],
@@ -92,9 +99,7 @@ class PointNavigator:
     def tick(self):
        
         '''
-        update everything.
-        first update the local tf
-        if possible move on. update the lodal waypoint, use that to update the goal action, set the waypoint reached state
+        update the action goal, and check if the waypoint is set
         '''
        
         if not self._ready_to_tick: return 
@@ -114,35 +119,18 @@ class PointNavigator:
         '''
         end it all, sent the final stop message
         '''
-
+        self._goal.linear_x = 0.0
+        self._goal.angular_z = 0.0
 
 
     @property
     def lidar_data_usable(self)->bool:
         if self._current_global_coord is None: return False
         if self._current_heading is None: return False
+        if abs(self._goal.angular_z) > PointNavigator.ROTATION__LIDAR_TH: return False
         return True
-
-    @property
-    def waypoint_reached(self)-> bool:
-        '''
-        return if the waypoint was reached
-        '''
-        return self._waypoint_reached
 
 
     @property
     def action_goal(self):
         return self._goal
-    
-    @property
-    def current_global_coord_offset(self)-> np.ndarray:
-        return self._current_global_coord
-    
-    @property
-    def current_global_heading(self)-> float:
-        return self._current_heading
-    
-    @property
-    def agnular_z(self)-> float:
-        return self._goal.angular_z
