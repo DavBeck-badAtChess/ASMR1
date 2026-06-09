@@ -39,19 +39,19 @@ class MetaController(Node):
         build and bind all subscriptions.
         '''
         self._goal_tile : int[int,int]  = None
-        self._current_tile  :int[int,int] = Helper.get_starting_tile()
+        self._current_tile  :int[int,int] = None# Helper.get_starting_tile()
 
         self._solver    : Solver     = None
         self._plotter   : OccGrid    = OccGrid(map_dims_in_meter=Helper.get_total_map_dim_in_meter())
         self._point_navigator   :PointNavigator  = PointNavigator()
 
-        latched_qos = QoSProfile(
+        latched_qos_goal = QoSProfile(
             depth=1,
             history=HistoryPolicy.KEEP_LAST,
             reliability=ReliabilityPolicy.RELIABLE,
             durability=DurabilityPolicy.TRANSIENT_LOCAL,
         )
-        latched_qos_2 = QoSProfile(
+        latched_qos_reached = QoSProfile(
             depth=1,
             history=HistoryPolicy.KEEP_LAST,
             reliability=ReliabilityPolicy.RELIABLE,
@@ -64,7 +64,7 @@ class MetaController(Node):
             PointStamped,
             '/goal_point',
             self._on_goal_data,
-            latched_qos,
+            latched_qos_goal,
         )
         
         # subscribe to goal rec
@@ -73,7 +73,7 @@ class MetaController(Node):
             Bool,
             '/goal_reached',
             self._on_goal_reached_send,
-            latched_qos_2,
+            latched_qos_reached,
         )
 
         # subscribe to lidar
@@ -173,7 +173,6 @@ class MetaController(Node):
         '''
         only run if:
             there is a goal
-            there is a current tile 
             the solver exists (really this is eq to the goal tile existing)
             there is a latest odom msg
             there is a latest lidar msg
@@ -181,7 +180,6 @@ class MetaController(Node):
         many things are assumed in order to tick. this is a quick debug ish function.
         '''
         if self._goal_tile is None: return False
-        if self._current_tile is None: return False
         if self._solver is None: return False
         if self._latest_odom_msg is None: return False
         if self._latest_lidar_msg is None: return False
