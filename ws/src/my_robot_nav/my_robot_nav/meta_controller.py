@@ -59,7 +59,6 @@ class MetaController(Node):
         )
 
         # subscribe to goal
-        self._goal_subscription = None
         self._goal_subscription = self.create_subscription(
             PointStamped,
             '/goal_point',
@@ -69,6 +68,7 @@ class MetaController(Node):
         
         # subscribe to goal rec
         self._goal_msg_recieved:bool = False
+        self._done:bool = False
         self._goal_reached_subscription = self.create_subscription(
             Bool,
             '/goal_reached',
@@ -183,6 +183,7 @@ class MetaController(Node):
         if self._solver is None: return False
         if self._latest_odom_msg is None: return False
         if self._latest_lidar_msg is None: return False
+        if self._done: return False
         return True
 
 
@@ -208,6 +209,7 @@ class MetaController(Node):
             self._point_navigator.kill()
             self._send_action_goal()
             self.get_logger().info('ROBOT ARRIVED')
+            self._done = True
             return
 
         self._update_global_positions()
