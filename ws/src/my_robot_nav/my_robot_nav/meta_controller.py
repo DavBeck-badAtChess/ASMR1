@@ -3,7 +3,7 @@ import sys
 sys.dont_write_bytecode = True
 import numpy as np 
 from enum import Enum
-from my_robot_nav.map_test import OccGrid
+from ASMR1.ws.src.my_robot_nav.my_robot_nav.debug_map import OccGrid
 
 from my_robot_nav.maze_solver import Solver
 from my_robot_nav.helper import Helper
@@ -30,8 +30,6 @@ class MetaController(Node):
     this is does not directly send any signals, it is just a controller.
     '''
     TICK_HZ = 10.00
-    ROTATION_TH = 0.25
-
     def __init__(self, name:str):
         super().__init__(name)
         '''
@@ -39,7 +37,7 @@ class MetaController(Node):
         build and bind all subscriptions.
         '''
         self._goal_tile : int[int,int]  = None
-        self._current_tile  :int[int,int] = None# Helper.get_starting_tile()
+        self._current_tile  :int[int,int] = None
 
         self._solver    : Solver     = None
         self._plotter   : OccGrid    = OccGrid(map_dims_in_meter=Helper.get_total_map_dim_in_meter())
@@ -206,6 +204,9 @@ class MetaController(Node):
         if not self._ready_to_tick: return
 
         if self._goal_msg_recieved:
+            '''
+            kill the nav, send the final stop goal, print the reached signal, and set the done flag to early out in furhther iters.
+            '''
             self._point_navigator.kill()
             self._send_action_goal()
             self.get_logger().info('ROBOT ARRIVED')

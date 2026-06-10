@@ -44,7 +44,7 @@ class Solver:
 
     def get_next_tile(self, tile_position:tuple[int,int]) -> tuple[int,int]:
         '''
-        check if the maps (paths etc) need to be updated, and returns the DIRECTION compund of the next step
+        check if the maps (paths etc) need to be updated, and returns the next tile
         '''
         if self._dirty_flag:
             self._solve_maze(position_tile=tile_position)
@@ -113,7 +113,7 @@ class Solver:
         i = 0
         while not found:
             i += 1
-            if i > 300: return # prevent endless loop
+            if i > 200: return # this might be called when there is no path, so this should not block
             tiles_to_search_next: set[int] = set()
             for tile in tiles_to_search:
                 curr_val = self._maze_soft_solved[tile]
@@ -153,14 +153,14 @@ class Solver:
         inf[~self._maze_soft] = 20
         inf[~self._maze] = 15
         inf[self._path_mask] = 0
-
         return inf.astype(int)
 
 
     @property
     def solved_maze(self)-> np.ndarray:
         return self._maze_soft_solved
-    
+
+
     @property
     def path_mask(self)-> np.ndarray:
         return self._path_mask

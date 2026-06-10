@@ -71,7 +71,7 @@ def generate_launch_description():
             arguments=['-d', rviz_config],
         ),
         
-        Node(# start the point meta controller
+        Node(# start the meta controller
             package='my_robot_nav',
             executable='meta_controller',
             name='meta_controller',
@@ -86,8 +86,7 @@ def generate_launch_description():
         ),
 
 
-        
-        TimerAction(
+        TimerAction(# this node starting to early caused some issues in the past. just to be safe i delay its start a bit.
             period=5.0,
             actions=[
                 Node(# add the goal checker nodek
@@ -104,5 +103,4 @@ def generate_launch_description():
                 ),
             ]
         )
-
     ])
