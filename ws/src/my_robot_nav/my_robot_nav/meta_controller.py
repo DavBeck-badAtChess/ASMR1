@@ -3,7 +3,7 @@ import sys
 sys.dont_write_bytecode = True
 import numpy as np 
 from enum import Enum
-from ASMR1.ws.src.my_robot_nav.my_robot_nav.debug_map import OccGrid
+from my_robot_nav.debug_map import OccGrid
 
 from my_robot_nav.maze_solver import Solver
 from my_robot_nav.helper import Helper

@@ -16,9 +16,9 @@ class PointNavigator:
     takes a point in worldspac and tries to navigate to it.
     '''
 
-    MAX_LIN_SPEED:float = 0.6
+    MAX_LIN_SPEED:float = 0.5
     MAX_ROT_SPEED:float = 0.9
-    CLOSNESS_THREASHOLD:float = 0.6
+    CLOSNESS_THREASHOLD:float = 0.7
     '''
     if the current rotation rate is to high, lidar data is likely to be offset significantly.
     i do not want to limit the rotation rate of the robot to much though,
