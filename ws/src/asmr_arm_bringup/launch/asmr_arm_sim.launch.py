@@ -36,6 +36,11 @@ def generate_launch_description():
             cmd=['gz', 'sim', '-r', push_block_world_path],
         ),
 
+        Node(
+            package='joint_state_publisher',
+            executable='joint_state_publisher',
+        ),
+
         # ExecuteProcess(
         #     cmd=[
         #     "ros2", "run", "tf2_ros", "static_transform_publisher",
