@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- ros2_control hardware interface + gz_ros2_control system plugin for the
+       2-link arm. The joint interface declarations below are a TEMPLATE for you
+       to complete (Task 1). Kept OUT of the geometry so the description is usable
+       bare in RViz; included only when use_sim_control is set. The
+       controllers_file parameter points at the matching controllers YAML. -->
+  <xacro:macro name="arm_ros2_control" params="controllers_file">
+
+    <ros2_control name="GazeboSystem" type="system">
+      <hardware>
+        <plugin>gz_ros2_control/GazeboSimSystem</plugin>
+      </hardware>
+
+      <!-- TEMPLATE: declare the hardware interfaces for each actuated joint -
+           the command interface you drive, and the state interfaces you read
+           back. -->
+      <joint name="">
+        <!-- command interface: one of  position | velocity | effort -->
+        <command_interface name="">
+          <!-- actuator commaneded limits, e.g. torque limits for effort control  -->
+          <param name="min"></param>
+          <param name="max"></param>
+        </command_interface>
+        <!-- state interfaces to read back (e.g. position, velocity) -->
+        <state_interface name=""/>
+        <state_interface name=""/>
+      </joint>
+    </ros2_control>
+
+    <gazebo>
+      <plugin filename="gz_ros2_control-system"
+              name="gz_ros2_control::GazeboSimROS2ControlPlugin">
+        <parameters>${controllers_file}</parameters>
+      </plugin>
+    </gazebo>
+
+  </xacro:macro>
+</robot>

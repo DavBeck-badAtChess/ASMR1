@@ -1,0 +1,8 @@
+# Request: target end-effector position in the arm's planar frame (metres)
+float64 x        # reach from the shoulder [m]
+float64 y        # height relative to the shoulder [m]
+---
+# Response: joint angles (radians) that reach the target
+float64 theta1   # shoulder joint angle [rad]
+float64 theta2   # elbow joint angle [rad]
+bool success     # false if the target is outside the workspace

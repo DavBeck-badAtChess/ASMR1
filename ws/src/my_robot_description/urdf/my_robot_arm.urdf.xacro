@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<robot name="my_robot_arm" xmlns:xacro="http://ros.org/wiki/xacro">
+
+  <!-- Base diff-drive robot (chassis, wheels, caster, LiDAR, gazebo plugins) -->
+  <xacro:include filename="$(find my_robot_description)/urdf/my_robot.urdf.xacro"/>
+
+  <!-- Suppress the standalone pedestal/world block when arm.urdf.xacro is included here -->
+  <xacro:arg name="standalone" default="false"/>
+
+  <!-- TASK 2(a): include the arm macro (asmr_arm_description/urdf/arm.urdf.xacro),
+       mount it on base_link so it faces forward, pass its link lengths (create an
+       arm_dimensions.yaml, modelled on the pedestal one), and wire its
+       ros2_control (arm.ros2_control.xacro + your controllers_mobile.yaml).
+       See "The Arm". -->
+
+</robot>

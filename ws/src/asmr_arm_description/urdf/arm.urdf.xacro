@@ -1,0 +1,160 @@
+<?xml version="1.0"?>
+<robot name="asmr_arm" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- ============================================================
+       Single source of the 2-link planar arm geometry.
+       - asmr_arm:      the arm itself (mount onto any parent)
+       - asmr_pedestal: an optional fixed pedestal + world root (Task 1)
+       Control (ros2_control + gz plugin) lives in arm.ros2_control.xacro and
+       is included only when use_sim_control is set.
+       ============================================================ -->
+
+  <!-- arm geometry macro -->
+  <xacro:macro name="asmr_arm" params="parent *origin l1:=0.2 l2:=0.2">
+
+    <xacro:property name="m1" value="0.5"/>
+    <xacro:property name="m2" value="0.3"/>
+    <xacro:property name="w1" value="0.05"/>
+    <xacro:property name="w2" value="0.04"/>
+
+    <material name="arm_blue"><color rgba="0.1 0.2 0.8 1"/></material>
+    <material name="arm_red"><color rgba="0.8 0.1 0.1 1"/></material>
+    <material name="arm_yellow"><color rgba="0.9 0.8 0.1 1"/></material>
+
+    <link name="link_1">
+      <visual>
+        <origin xyz="0 ${l1/2} 0" rpy="0 0 0"/>
+        <geometry><box size="${w1} ${l1} ${w1}"/></geometry>
+        <material name="arm_blue"/>
+      </visual>
+      <collision>
+        <origin xyz="0 ${l1/2} 0" rpy="0 0 0"/>
+        <geometry><box size="${w1} ${l1} ${w1}"/></geometry>
+      </collision>
+      <inertial>
+        <origin xyz="0 ${l1/2} 0" rpy="0 0 0"/>
+        <mass value="${m1}"/>
+        <inertia ixx="${m1/12*(l1*l1 + w1*w1)}" ixy="0" ixz="0"
+                 iyy="${m1/12*(w1*w1 + w1*w1)}" iyz="0"
+                 izz="${m1/12*(w1*w1 + l1*l1)}"/>
+      </inertial>
+    </link>
+
+    <joint name="shoulder" type="revolute">
+      <parent link="${parent}"/>
+      <child link="link_1"/>
+      <xacro:insert_block name="origin"/>
+      <axis xyz="1 0 0"/>
+      <limit lower="-3.14159" upper="3.14159" effort="30.0" velocity="5.0"/>
+      <dynamics damping="3.0" friction="0.3"/>
+    </joint>
+
+    <link name="link_2">
+      <visual>
+        <origin xyz="0 ${l2/2} 0" rpy="0 0 0"/>
+        <geometry><box size="${w2} ${l2} ${w2}"/></geometry>
+        <material name="arm_red"/>
+      </visual>
+      <collision>
+        <origin xyz="0 ${l2/2} 0" rpy="0 0 0"/>
+        <geometry><box size="${w2} ${l2} ${w2}"/></geometry>
+      </collision>
+      <inertial>
+        <origin xyz="0 ${l2/2} 0" rpy="0 0 0"/>
+        <mass value="${m2}"/>
+        <inertia ixx="${m2/12*(l2*l2 + w2*w2)}" ixy="0" ixz="0"
+                 iyy="${m2/12*(w2*w2 + w2*w2)}" iyz="0"
+                 izz="${m2/12*(w2*w2 + l2*l2)}"/>
+      </inertial>
+    </link>
+
+    <joint name="elbow" type="revolute">
+      <parent link="link_1"/>
+      <child link="link_2"/>
+      <origin xyz="0 ${l1} 0" rpy="0 0 0"/>
+      <axis xyz="1 0 0"/>
+      <limit lower="-3.14159" upper="3.14159" effort="30.0" velocity="5.0"/>
+      <dynamics damping="3.0" friction="0.3"/>
+    </joint>
+
+    <link name="tool">
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry><sphere radius="0.025"/></geometry>
+        <material name="arm_yellow"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry><sphere radius="0.025"/></geometry>
+      </collision>
+      <inertial>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <mass value="0.05"/>
+        <inertia ixx="1.25e-5" ixy="0" ixz="0" iyy="1.25e-5" iyz="0" izz="1.25e-5"/>
+      </inertial>
+    </link>
+
+    <joint name="tool_fixed" type="fixed">
+      <parent link="link_2"/>
+      <child link="tool"/>
+      <origin xyz="0 ${l2} 0" rpy="0 0 0"/>
+    </joint>
+
+    <gazebo reference="link_1"><material>Gazebo/Blue</material></gazebo>
+    <gazebo reference="link_2"><material>Gazebo/Red</material></gazebo>
+    <gazebo reference="tool">
+      <material>Gazebo/Yellow</material>
+      <mu1>0.8</mu1>
+      <mu2>0.8</mu2>
+    </gazebo>
+
+  </xacro:macro>
+
+  <!-- optional fixed pedestal + world root (Task 1 standalone) -->
+  <xacro:macro name="asmr_pedestal" params="height:=0.15">
+    <link name="world"/>
+    <link name="pedestal">
+      <visual>
+        <origin xyz="0 0 ${height/2}" rpy="0 0 0"/>
+        <geometry><box size="0.1 0.1 ${height}"/></geometry>
+        <material name="dark_grey"><color rgba="0.3 0.3 0.3 1"/></material>
+      </visual>
+      <collision>
+        <origin xyz="0 0 ${height/2}" rpy="0 0 0"/>
+        <geometry><box size="0.1 0.1 ${height}"/></geometry>
+      </collision>
+      <inertial>
+        <origin xyz="0 0 ${height/2}" rpy="0 0 0"/>
+        <mass value="5.0"/>
+        <inertia ixx="0.07" ixy="0" ixz="0" iyy="0.07" iyz="0" izz="0.0083"/>
+      </inertial>
+    </link>
+    <joint name="world_to_pedestal" type="fixed">
+      <parent link="world"/>
+      <child link="pedestal"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+    </joint>
+    <gazebo reference="pedestal"><material>Gazebo/Grey</material></gazebo>
+  </xacro:macro>
+
+  <!-- standalone Task-1 robot (skipped when included as a macro library) -->
+  <xacro:arg name="standalone"      default="true"/>
+  <xacro:arg name="use_sim_control" default="false"/>
+  <xacro:arg name="dimensions_file"
+             default="$(find asmr_arm_description)/config/arm_dimensions_pedestal.yaml"/>
+
+  <xacro:if value="$(arg standalone)">
+    <xacro:property name="dims_path" value="$(arg dimensions_file)"/>
+    <xacro:property name="dims" value="${xacro.load_yaml(dims_path)}"/>
+    <xacro:asmr_pedestal height="0.15"/>
+    <xacro:asmr_arm parent="pedestal" l1="${dims['l1']}" l2="${dims['l2']}">
+      <origin xyz="0 0 0.15" rpy="0 0 0"/>
+    </xacro:asmr_arm>
+    <xacro:if value="$(arg use_sim_control)">
+      <xacro:include filename="$(find asmr_arm_description)/urdf/arm.ros2_control.xacro"/>
+      <xacro:arm_ros2_control
+          controllers_file="$(find asmr_arm_description)/config/controllers_pedestal.yaml"/>
+    </xacro:if>
+  </xacro:if>
+
+</robot>

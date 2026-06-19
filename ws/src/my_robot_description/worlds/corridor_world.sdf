@@ -1,0 +1,220 @@
+<?xml version="1.0"?>
+<!-- Straight-corridor world for MiniLab 2 Task 2.
+     World frame: x=east, y=north, z=up. Interior corridor width 1.0 m.
+       Corridor:  x in [-0.6, 3.0], inner walls at y = +/-0.5
+       Door:      flush revolute panel at x~=3.0, hinge at south jamb (y=-0.45),
+                  free (north) edge swings +x into the room (negative about +z)
+       Room:      x in [3.0, 6.0], y in [-1.5, 1.5], enclosed
+     Robot spawn: (-0.5, 0, 0.1), yaw 0.26 rad (~15 deg off +x) -- set in corridor.launch.py
+     The panel top (z=0.45) is above the LiDAR plane (z~=0.125): the robot must
+     push the door to pass. Clearance recipe (so the hinge does not jam): doorway
+     1.0 m wide vs 0.9 m panel (0.05 m each side), thin panel (0.06), floor gap
+     (panel spans z 0.05..0.45), light damping 0.01, no spring.
+-->
+<sdf version="1.10">
+  <world name="default">
+
+    <physics name="1ms" type="ignored">
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+    </physics>
+    <plugin filename="gz-sim-physics-system"
+            name="gz::sim::systems::Physics"/>
+    <plugin filename="gz-sim-user-commands-system"
+            name="gz::sim::systems::UserCommands"/>
+    <plugin filename="gz-sim-scene-broadcaster-system"
+            name="gz::sim::systems::SceneBroadcaster"/>
+    <plugin filename="gz-sim-sensors-system"
+            name="gz::sim::systems::Sensors">
+      <render_engine>ogre2</render_engine>
+    </plugin>
+
+    <light type="directional" name="sun">
+      <cast_shadows>true</cast_shadows>
+      <pose>0 0 10 0 0 0</pose>
+      <diffuse>0.8 0.8 0.8 1</diffuse>
+      <specular>0.2 0.2 0.2 1</specular>
+      <direction>-0.5 0.1 -0.9</direction>
+    </light>
+
+    <model name="ground_plane">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry><plane>
+            <normal>0 0 1</normal>
+            <size>20 20</size>
+          </plane></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><plane>
+            <normal>0 0 1</normal>
+            <size>20 20</size>
+          </plane></geometry>
+          <material>
+            <ambient>0.8 0.8 0.8 1</ambient>
+            <diffuse>0.8 0.8 0.8 1</diffuse>
+            <specular>0.8 0.8 0.8 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ===== Walls (static). Each <pose> is the wall-centre; <size> is L x W x H.
+         Wall thickness 0.1, height 0.5. ===== -->
+    <model name="walls">
+      <static>true</static>
+      <link name="link">
+
+        <!-- Corridor north wall: y=+0.55, x in [-1.0, 3.0] (extended west so
+             the cap clears the robot's rear at spawn x=-0.5, chassis 0.30 long) -->
+        <collision name="c_corr_n">
+          <pose>1.0 0.55 0.25 0 0 0</pose>
+          <geometry><box><size>4.0 0.1 0.5</size></box></geometry>
+        </collision>
+        <visual name="v_corr_n">
+          <pose>1.0 0.55 0.25 0 0 0</pose>
+          <geometry><box><size>4.0 0.1 0.5</size></box></geometry>
+        </visual>
+
+        <!-- Corridor south wall: y=-0.55, x in [-1.0, 3.0] -->
+        <collision name="c_corr_s">
+          <pose>1.0 -0.55 0.25 0 0 0</pose>
+          <geometry><box><size>4.0 0.1 0.5</size></box></geometry>
+        </collision>
+        <visual name="v_corr_s">
+          <pose>1.0 -0.55 0.25 0 0 0</pose>
+          <geometry><box><size>4.0 0.1 0.5</size></box></geometry>
+        </visual>
+
+        <!-- West end cap: x=-1.0 (robot rear at x~=-0.65 -> ~0.3 m clearance) -->
+        <collision name="c_westcap">
+          <pose>-1.0 0 0.25 0 0 0</pose>
+          <geometry><box><size>0.1 1.2 0.5</size></box></geometry>
+        </collision>
+        <visual name="v_westcap">
+          <pose>-1.0 0 0.25 0 0 0</pose>
+          <geometry><box><size>0.1 1.2 0.5</size></box></geometry>
+        </visual>
+
+        <!-- Door front wall, north of doorway: x=3.0, y in [0.5, 1.6] -->
+        <collision name="c_front_n">
+          <pose>3.0 1.05 0.25 0 0 0</pose>
+          <geometry><box><size>0.1 1.1 0.5</size></box></geometry>
+        </collision>
+        <visual name="v_front_n">
+          <pose>3.0 1.05 0.25 0 0 0</pose>
+          <geometry><box><size>0.1 1.1 0.5</size></box></geometry>
+        </visual>
+
+        <!-- Door front wall, south of doorway: x=3.0, y in [-1.6, -0.5] -->
+        <collision name="c_front_s">
+          <pose>3.0 -1.05 0.25 0 0 0</pose>
+          <geometry><box><size>0.1 1.1 0.5</size></box></geometry>
+        </collision>
+        <visual name="v_front_s">
+          <pose>3.0 -1.05 0.25 0 0 0</pose>
+          <geometry><box><size>0.1 1.1 0.5</size></box></geometry>
+        </visual>
+
+        <!-- Room north wall: y=+1.55, x in [3.0, 6.0] -->
+        <collision name="c_room_n">
+          <pose>4.5 1.55 0.25 0 0 0</pose>
+          <geometry><box><size>3.0 0.1 0.5</size></box></geometry>
+        </collision>
+        <visual name="v_room_n">
+          <pose>4.5 1.55 0.25 0 0 0</pose>
+          <geometry><box><size>3.0 0.1 0.5</size></box></geometry>
+        </visual>
+
+        <!-- Room south wall: y=-1.55, x in [3.0, 6.0] -->
+        <collision name="c_room_s">
+          <pose>4.5 -1.55 0.25 0 0 0</pose>
+          <geometry><box><size>3.0 0.1 0.5</size></box></geometry>
+        </collision>
+        <visual name="v_room_s">
+          <pose>4.5 -1.55 0.25 0 0 0</pose>
+          <geometry><box><size>3.0 0.1 0.5</size></box></geometry>
+        </visual>
+
+        <!-- Room back wall: x=6.05, y in [-1.6, 1.6] -->
+        <collision name="c_room_back">
+          <pose>6.05 0 0.25 0 0 0</pose>
+          <geometry><box><size>0.1 3.2 0.5</size></box></geometry>
+        </collision>
+        <visual name="v_room_back">
+          <pose>6.05 0 0.25 0 0 0</pose>
+          <geometry><box><size>0.1 3.2 0.5</size></box></geometry>
+        </visual>
+
+      </link>
+    </model>
+
+    <!-- ===== Door: 0.9 m panel, thin in x, hinged at the south jamb against a
+         world-fixed frame post. Damped revolute, no spring. Robot pushes the
+         west (-x) face -> free (north) edge swings +x into the room (negative
+         about +z; limit lower=-1.8). ===== -->
+    <model name="door">
+      <pose>3.0 -0.45 0 0 0 0</pose>
+      <link name="frame_post">
+        <!-- small hinge mount just south of the panel, tucked at the jamb -->
+        <pose>0 -0.075 0.25 0 0 0</pose>
+        <inertial>
+          <mass>0.1</mass>
+          <inertia><ixx>0.001</ixx><ixy>0</ixy><ixz>0</ixz>
+                   <iyy>0.001</iyy><iyz>0</iyz><izz>0.001</izz></inertia>
+        </inertial>
+        <collision name="collision">
+          <geometry><box><size>0.06 0.05 0.5</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.06 0.05 0.5</size></box></geometry>
+          <material>
+            <ambient>0.5 0.5 0.5 1</ambient><diffuse>0.5 0.5 0.5 1</diffuse>
+          </material>
+        </visual>
+      </link>
+      <link name="panel">
+        <!-- centre 0.45 north of the hinge -> spans world y in [-0.45, 0.45] -->
+        <pose>0 0.45 0.25 0 0 0</pose>
+        <!-- Light panel so one arm stroke imparts enough momentum to coast it
+             open (no spring -> it stays open). mass 0.3->0.15, inertia scaled. -->
+        <inertial>
+          <mass>0.15</mass>
+          <inertia><ixx>0.0121</ixx><ixy>0</ixy><ixz>0</ixz>
+                   <iyy>0.0020</iyy><iyz>0</iyz><izz>0.0102</izz></inertia>
+        </inertial>
+        <collision name="collision">
+          <geometry><box><size>0.06 0.9 0.4</size></box></geometry>
+          <surface><friction><ode>
+            <mu>0.2</mu><mu2>0.2</mu2>
+          </ode></friction></surface>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.06 0.9 0.4</size></box></geometry>
+          <material>
+            <ambient>0.1 0.5 0.8 1</ambient>
+            <diffuse>0.1 0.5 0.8 1</diffuse>
+            <specular>0.2 0.2 0.2 1</specular>
+          </material>
+        </visual>
+      </link>
+      <joint name="frame_fixed" type="fixed">
+        <parent>world</parent>
+        <child>frame_post</child>
+      </joint>
+      <joint name="hinge" type="revolute">
+        <parent>frame_post</parent>
+        <child>panel</child>
+        <!-- hinge at the panel's south end = model origin (3.0, -0.45) -->
+        <pose>0 -0.45 0 0 0 0</pose>
+        <axis>
+          <xyz>0 0 1</xyz>
+          <limit><lower>-1.8</lower><upper>0.0</upper></limit>
+          <dynamics><damping>0.01</damping></dynamics>
+        </axis>
+      </joint>
+    </model>
+
+  </world>
+</sdf>
