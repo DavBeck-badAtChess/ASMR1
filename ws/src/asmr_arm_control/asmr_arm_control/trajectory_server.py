@@ -1,0 +1,70 @@
+from __future__ import annotations
+import sys
+sys.dont_write_bytecode = True
+import numpy as np 
+from enum import Enum
+
+
+import rclpy
+import tf2_ros
+import tf2_geometry_msgs  # noqa: F401  (registers transform support for PointStamped)
+from rclpy.node import Node
+from rclpy.executors import MultiThreadedExecutor
+
+from asmr_arm_interfaces.action import ExecuteTrajectory
+from asmr_arm_interfaces.srv import ComputeFK
+from asmr_arm_interfaces.srv import ComputeIK
+
+
+''' FK
+# Request: joint angles (radians)
+float64 theta1   # shoulder joint angle [rad]
+float64 theta2   # elbow joint angle [rad]
+---
+# Response: end-effector position in the arm's planar frame (metres)
+float64 x        # reach from the shoulder [m]
+float64 y        # height relative to the shoulder [m]
+bool success     # true if the request was valid
+'''
+
+
+
+
+class TajectoryServer(Node):    
+    def __init__(self, name:str):
+        super().__init__(name)
+        self._test_client = self.create_service(
+            ExecuteTrajectory,
+            "test",
+            self.callback
+        )
+
+        while not self._test_client.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info("waiting on service")
+
+        print(self.test_send())
+
+        
+    def test_send(self):
+        req = ComputeFK.Request()
+        ComputeFK.theta1 = 0.0
+        ComputeFK.theta2 = 0.0
+
+        return self._test_client.call_async(req)
+
+
+
+def main(args=None) -> None:
+    rclpy.init(args=args)
+    server = TajectoryServer('tajectory_server')
+    executor = MultiThreadedExecutor()
+    executor.add_node(server)
+    try:
+        executor.spin()
+    except KeyboardInterrupt:
+        pass
+    server.destroy_node()
+    rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
