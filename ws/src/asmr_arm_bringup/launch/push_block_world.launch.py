@@ -19,9 +19,9 @@ def generate_launch_description():
     bridge_config = PathJoinSubstitution(
         [FindPackageShare('asmr_arm_bringup'), 'config', 'bridge.yaml']
     )
-    # rviz_config = PathJoinSubstitution(
-    #     [FindPackageShare('my_robot_bringup'), 'config', 'my_robot.rviz']
-    # )
+    rviz_config = PathJoinSubstitution(
+        [FindPackageShare('my_robot_bringup'), 'config', 'asmr_arm.rviz']
+    )
 #
 
 
@@ -78,6 +78,6 @@ def generate_launch_description():
         Node(
             package='rviz2',
             executable='rviz2',
-            #arguments=['-d', ],
+            arguments=['-d', rviz_config],
         ),
     ])
