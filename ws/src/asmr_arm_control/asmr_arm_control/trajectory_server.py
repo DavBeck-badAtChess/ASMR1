@@ -33,13 +33,12 @@ bool success     # true if the request was valid
 class TajectoryServer(Node):    
     def __init__(self, name:str):
         super().__init__(name)
-        self._test_client = self.create_service(
-            ExecuteTrajectory,
-            "test",
-            self.callback
+        self._fk_client = self.create_client(
+            ComputeFK,
+            "fk_client",
         )
 
-        while not self._test_client.wait_for_service(timeout_sec=1.0):
+        while not self._fk_client.wait_for_service(timeout_sec=1.0):
             self.get_logger().info("waiting on service")
 
         print(self.test_send())
@@ -52,11 +51,13 @@ class TajectoryServer(Node):
 
         return self._test_client.call_async(req)
 
+    def _callback(self, request, response):
+        pass
 
 
 def main(args=None) -> None:
     rclpy.init(args=args)
-    server = TajectoryServer('tajectory_server')
+    server = TajectoryServer('trajectory_server')
     executor = MultiThreadedExecutor()
     executor.add_node(server)
     try:

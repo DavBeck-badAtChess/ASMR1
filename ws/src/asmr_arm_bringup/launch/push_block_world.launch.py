@@ -64,6 +64,14 @@ def generate_launch_description():
             executable='push_block_mission',
         ),
         Node(
+            package='asmr_arm_control',
+            executable='kinematics_server',
+        ),
+        Node(
+            package='asmr_arm_control',
+            executable='trajectory_server',
+        ),
+        Node(
             package='ros_gz_sim',
             executable='create',
             arguments=[

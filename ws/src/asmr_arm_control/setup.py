@@ -24,6 +24,8 @@ setup(
     },
     entry_points={
         'console_scripts': [
+            'kinematics_server = asmr_arm_control.kinematics_server:main',
+            'trajectory_server = asmr_arm_control.trajectory_server:main',
         ],
     },
 )

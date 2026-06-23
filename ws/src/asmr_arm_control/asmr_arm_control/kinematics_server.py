@@ -47,13 +47,13 @@ class KinematicsServer(Node):
         
         self._fk_service = self.create_service(
             ComputeFK,
-            "forward kinematics",
+            "forward_kinematics",
             self._compute_forward_kinematics
         )
 
         self._ik_service = self.create_service(
             ComputeIK,
-            "inverse kinematics",
+            "inverse_kinematics",
             self._compute_inverse_kinematics
         )
 

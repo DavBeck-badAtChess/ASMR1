@@ -6,8 +6,8 @@ class PushBlockMission(Node):
     def __init__(self):
         super().__init__('push_block_mission')
 
-def main():
-    rclpy.init()
+def main(args=None) -> None:
+    rclpy.init(args=args)
 
     try:
         node = PushBlockMission()
