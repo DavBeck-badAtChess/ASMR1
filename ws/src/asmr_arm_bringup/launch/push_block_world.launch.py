@@ -20,7 +20,7 @@ def generate_launch_description():
         [FindPackageShare('asmr_arm_bringup'), 'config', 'bridge.yaml']
     )
     rviz_config = PathJoinSubstitution(
-        [FindPackageShare('my_robot_bringup'), 'config', 'asmr_arm.rviz']
+        [FindPackageShare('asmr_arm_bringup'), 'config', 'asmr_arm.rviz']
     )
 #
 
