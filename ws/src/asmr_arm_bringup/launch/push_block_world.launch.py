@@ -60,6 +60,10 @@ def generate_launch_description():
         # output="screen"
         # ),
         Node(
+            package='asmr_arm_mission',
+            executable='push_block_mission',
+        ),
+        Node(
             package='ros_gz_sim',
             executable='create',
             arguments=[
