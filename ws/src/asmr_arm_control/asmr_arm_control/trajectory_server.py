@@ -35,21 +35,26 @@ class TajectoryServer(Node):
         super().__init__(name)
         self._fk_client = self.create_client(
             ComputeFK,
-            "fk_client",
+            "forward_kinematics",
+        )
+        self._ik_client = self.create_client(
+            ComputeIK,
+            "inverse_kinematics",
         )
 
         while not self._fk_client.wait_for_service(timeout_sec=1.0):
-            self.get_logger().info("waiting on service")
-
-        print(self.test_send())
+            self.get_logger().info("FK server not available, trying again")
+        while not self._ik_client.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info("IK server not available, trying again")
+        self.get_logger().info("Successfully connected to FK & IK servers")
+        self.req = ComputeFK.Request()
+        
 
         
-    def test_send(self):
-        req = ComputeFK.Request()
-        ComputeFK.theta1 = 0.0
-        ComputeFK.theta2 = 0.0
-
-        return self._test_client.call_async(req)
+    def send_fk_request(self, theta1, theta2):
+        self.req.theta1 = theta1
+        self.req.theta2 = theta2 
+        return self._fk_client.call_async(self.req)
 
     def _callback(self, request, response):
         pass
@@ -58,6 +63,13 @@ class TajectoryServer(Node):
 def main(args=None) -> None:
     rclpy.init(args=args)
     server = TajectoryServer('trajectory_server')
+    future = server.send_fk_request(float(np.pi * 0.5), 0.0)
+    rclpy.spin_until_future_complete(server, future)
+    response = future.result()
+    server.get_logger().info(
+        f"theta1={response.x} ({type(response.x)})"
+        f"theta2={response.y} ({type(response.y)})"
+    )
     executor = MultiThreadedExecutor()
     executor.add_node(server)
     try:
