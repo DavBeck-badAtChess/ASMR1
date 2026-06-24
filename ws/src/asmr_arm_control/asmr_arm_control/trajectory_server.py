@@ -67,8 +67,15 @@ def main(args=None) -> None:
     rclpy.spin_until_future_complete(server, future)
     response = future.result()
     server.get_logger().info(
-        f"theta1={response.x} ({type(response.x)})"
-        f"theta2={response.y} ({type(response.y)})"
+        f"x={response.x} ({type(response.x)}\n)"
+        f"y={response.y} ({type(response.y)}\n)"
+    )
+    future = server.send_fk_request(0.0,0.0)
+    rclpy.spin_until_future_complete(server, future)
+    response = future.result()
+    server.get_logger().info(
+        f"x={response.x} ({type(response.x)}) should be 1-\n"
+        f"y={response.y} ({type(response.y)}) should be 0\n"
     )
     executor = MultiThreadedExecutor()
     executor.add_node(server)

@@ -19,10 +19,10 @@ def generate_launch_description():
     bridge_config = PathJoinSubstitution(
         [FindPackageShare('asmr_arm_bringup'), 'config', 'bridge.yaml']
     )
+
     rviz_config = PathJoinSubstitution(
         [FindPackageShare('asmr_arm_bringup'), 'config', 'asmr_arm.rviz']
     )
-#
 
 
     return LaunchDescription([

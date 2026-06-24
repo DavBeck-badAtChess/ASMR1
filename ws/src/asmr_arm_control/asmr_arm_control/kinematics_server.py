@@ -3,8 +3,6 @@ import sys
 sys.dont_write_bytecode = True
 import numpy as np 
 
-
-
 import rclpy
 from rclpy.node import Node
 from rclpy.executors import MultiThreadedExecutor
@@ -34,17 +32,17 @@ float64 y        # height relative to the shoulder [m]
 float64 theta1   # shoulder joint angle [rad]
 float64 theta2   # elbow joint angle [rad]
 bool success     # false if the target is outside the workspace
-'''
+''' 
 
 class KinematicsServer(Node):
-    CLOSENESS_TOLERANCE:float  = 0.01
-    STEP_SIZE:float  = 0.01
+    CLOSENESS_TOLERANCE: float  = 0.01
+    STEP_SIZE: float  = 0.01
 
-    robot_arm_lengths = (-1,-1)
 
     def __init__(self, name:str):
         super().__init__(name)
-        
+        self.l1 = 0.5
+        self.l2 = 0.5
         self._fk_service = self.create_service(
             ComputeFK,
             "forward_kinematics",
@@ -81,9 +79,8 @@ class KinematicsServer(Node):
 
 
     def _compute_forward_kinematics(self, request, response):
-        # MISSING DIMENSION
-        x = np.cos(request.theta1) + np.cos(request.theta1 + request.theta2)
-        y = np.sin(request.theta1) + np.sin(request.theta1 + request.theta2)
+        x = self.l1 * np.cos(request.theta1) + self.l2 * np.cos(request.theta1 + request.theta2)
+        y = self.l1 * np.sin(request.theta1) + self.l2 * np.sin(request.theta1 + request.theta2)
         response.x = x
         response.y = y
         response.success = True
