@@ -47,14 +47,21 @@ class TajectoryServer(Node):
         while not self._ik_client.wait_for_service(timeout_sec=1.0):
             self.get_logger().info("IK server not available, trying again")
         self.get_logger().info("Successfully connected to FK & IK servers")
-        self.req = ComputeFK.Request()
+        self.fk_req = ComputeFK.Request()
+        self.ik_req = ComputeIK.Request()
         
 
         
     def send_fk_request(self, theta1, theta2):
-        self.req.theta1 = theta1
-        self.req.theta2 = theta2 
-        return self._fk_client.call_async(self.req)
+        self.fk_req.theta1 = theta1
+        self.fk_req.theta2 = theta2 
+        return self._fk_client.call_async(self.fk_req)
+
+
+    def send_ik_request(self, x, y):
+        self.ik_req.x = x
+        self.ik_req.y = y 
+        return self._ik_client.call_async(self.ik_req)
 
     def _callback(self, request, response):
         pass
@@ -76,6 +83,22 @@ def main(args=None) -> None:
     server.get_logger().info(
         f"x={response.x} ({type(response.x)}) should be 1-\n"
         f"y={response.y} ({type(response.y)}) should be 0\n"
+    )
+    future = server.send_ik_request(0.3,0.3)
+    rclpy.spin_until_future_complete(server, future)
+    response = future.result()
+    server.get_logger().info(
+        f"theta1={response.theta1} ({type(response.theta1)})\n"
+        f"theta2={response.theta2} ({type(response.theta2)})\n"
+        f"success={response.success} ({type(response.success)})\n"
+    )
+    future = server.send_ik_request(1.0,0.1)
+    rclpy.spin_until_future_complete(server, future)
+    response = future.result()
+    server.get_logger().info(
+        f"theta1={response.theta1} ({type(response.theta1)})\n"
+        f"theta2={response.theta2} ({type(response.theta2)})\n"
+        f"success={response.success} ({type(response.success)})\n"
     )
     executor = MultiThreadedExecutor()
     executor.add_node(server)
