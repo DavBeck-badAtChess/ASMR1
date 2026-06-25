@@ -18,23 +18,23 @@ controller_manager:
 arm_pid_controller:
   ros__parameters:
     dof_names:                           # the actuated joints (see the URDF / /joint_states)
-
-    command_interface:                   # one of: position | velocity | effort
-    reference_and_state_interfaces:      # list of: position | velocity   (e.g. ["velocity"])
-    set_current_state_as_first_setpoint: # bool: true | false
+      ["elbow","shoulder"]
+    command_interface: "position"                  # one of: position | velocity | effort
+    reference_and_state_interfaces: ["position"]      # list of: position | velocity   (e.g. ["velocity"]ı)
+    set_current_state_as_first_setpoint: true # bool: true | false
 
     gains:
       shoulder:
-        p:                  # float
-        i:                  # float
-        d:                  # float
-        u_clamp_max:        # float
-        u_clamp_min:        # float
-        feedforward_gain:   # float
+        p:                 0 # float
+        i:                 0 # float
+        d:                 0 # float
+        u_clamp_max:       0 # float
+        u_clamp_min:       0 # float
+        feedforward_gain:  0 # float
       elbow:
-        p:                  # float
-        i:                  # float
-        d:                  # float
-        u_clamp_max:        # float
-        u_clamp_min:        # float
-        feedforward_gain:   # float
+        p:                 0 # float
+        i:                 0 # float
+        d:                 0 # float
+        u_clamp_max:       0 # float
+        u_clamp_min:       0 # float
+        feedforward_gain:  0 # float
