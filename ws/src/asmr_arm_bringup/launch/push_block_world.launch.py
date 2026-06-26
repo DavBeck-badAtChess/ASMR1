@@ -4,7 +4,6 @@ from launch.actions import ExecuteProcess
 from launch.substitutions import Command, PathJoinSubstitution
 from launch_ros.substitutions import FindPackageShare
 from launch_ros.parameter_descriptions import ParameterValue
-from launch.actions import TimerAction
 
 
 def generate_launch_description():
@@ -24,14 +23,15 @@ def generate_launch_description():
         [FindPackageShare('asmr_arm_bringup'), 'config', 'asmr_arm.rviz']
     )
 
-
     return LaunchDescription([
         Node(
-            package='robot_state_publisher',
-            executable='robot_state_publisher',
-            parameters=[{'robot_description': ParameterValue(Command(['xacro ', arm_urdf_path]), value_type=str)}],
+           package='robot_state_publisher',
+           executable='robot_state_publisher',
+           output = "screen",
+           parameters=[{'robot_description': ParameterValue(Command(['xacro ', arm_urdf_path, ' use_sim_control:=true']), value_type=str)}],
         ),
 
+        
         ExecuteProcess(
             cmd=['gz', 'sim', '-r', push_block_world_path],
         ),
@@ -41,36 +41,21 @@ def generate_launch_description():
             executable='joint_state_publisher',
         ),
 
-        # ExecuteProcess(
-        #     cmd=[
-        #     "ros2", "run", "tf2_ros", "static_transform_publisher",
-        #     "0", "0", "0",
-        #     "0", "0", "0",
-        #     "map", "odom"
-        #     ],
-        #     output="screen"
-        # ),
-        # ExecuteProcess(
-        #     cmd=[
-        #     "ros2", "run", "tf2_ros", "static_transform_publisher",
-        #     "0", "0", "0",
-        #     "0", "0", "0",
-        #     "odom", "base_link"
-        # ],
-        # output="screen"
-        # ),
         Node(
             package='asmr_arm_mission',
             executable='push_block_mission',
         ),
+
         Node(
             package='asmr_arm_control',
             executable='kinematics_server',
         ),
+
         Node(
             package='asmr_arm_control',
             executable='trajectory_server',
         ),
+
         Node(
             package='ros_gz_sim',
             executable='create',
@@ -82,11 +67,13 @@ def generate_launch_description():
                 '-y', '0.0',
             ],
         ),
+
         # Node(
         #     package='ros_gz_bridge',
         #     executable='parameter_bridge',
         #     parameters=[{'config_file': bridge_config}],
         # ),
+
         Node(
             package='rviz2',
             executable='rviz2',

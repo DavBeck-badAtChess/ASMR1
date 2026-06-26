@@ -1,7 +1,6 @@
 controller_manager:
   ros__parameters:
     update_rate: 500  # Hz
-
     joint_state_broadcaster:
       type: joint_state_broadcaster/JointStateBroadcaster
 
@@ -17,24 +16,26 @@ controller_manager:
 # ---------------------------------------------------------------------------
 arm_pid_controller:
   ros__parameters:
-    dof_names:                           # the actuated joints (see the URDF / /joint_states)
-      ["elbow","shoulder"]
-    command_interface: "position"                  # one of: position | velocity | effort
-    reference_and_state_interfaces: ["position"]      # list of: position | velocity   (e.g. ["velocity"]ı)
-    set_current_state_as_first_setpoint: true # bool: true | false
-
+    dof_names:
+      - elbow
+      - shoulder
+    command_interface: effort
+    reference_and_state_interfaces: ["position"]
+    set_current_state_as_first_setpoint: true
     gains:
-      shoulder:
-        p:                 0 # float
-        i:                 0 # float
-        d:                 0 # float
-        u_clamp_max:       0 # float
-        u_clamp_min:       0 # float
-        feedforward_gain:  0 # float
-      elbow:
-        p:                 0 # float
-        i:                 0 # float
-        d:                 0 # float
-        u_clamp_max:       0 # float
-        u_clamp_min:       0 # float
-        feedforward_gain:  0 # float
+      elbow:{
+        p:                 1.0,
+        i:                 1.0,
+        d:                 1.0,
+        u_clamp_max:       1.0,
+        u_clamp_min:       1.0,
+        feedforward_gain:  1.0
+      }
+      shoulder:{
+        p:                 1.0,
+        i:                 1.0,
+        d:                 1.0,
+        u_clamp_max:       1.0,
+        u_clamp_min:       1.0,
+        feedforward_gain:  1.0
+      }
