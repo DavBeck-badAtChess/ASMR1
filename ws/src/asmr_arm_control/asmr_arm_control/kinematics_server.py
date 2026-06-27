@@ -83,15 +83,13 @@ class KinematicsServer(Node):
 
         d = (np.square(x) + np.square(y) - np.square(self.l1) - np.square(self.l2))/(2 * self.l1 * self.l2)
         if abs(d) > 1:
-            raise ValueError("out of reach")
-        theta2 = 0.0
-        if elbow_up:
-            theta2 = np.arctan2(np.sqrt(1-np.square(d)), d)
-        else:
-            theta2 = np.arctan2(-np.sqrt(1-np.square(d)), d)
+            response.success = False
+            return response
+        theta2 = np.arctan2(np.sqrt(1-np.square(d)), d) # always use ellbow up
         theta1 = np.arctan2(y, x) - np.arctan2(self.l2 * np.sin(theta2), self.l1 + self.l2 * np.cos(theta2))
         response.theta1 = theta1
         response.theta2 = theta2
+        response.success = True
         return response
 
     def _compute_forward_kinematics(self, request, response):

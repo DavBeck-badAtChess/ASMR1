@@ -124,14 +124,48 @@ class TrajectoryServer(Node):
         self.get_logger().info("exiting _plan_trajectory")
         return trajectory_array
 
-    def execute_trajectory(self, goal_handle):
+    async def execute_trajectory(self, goal_handle):
+        result = ExecuteTrajectory.Result()
         self.get_logger().info("hello from execute_trajectory")
         goal_x = goal_handle.request.x
         goal_y = goal_handle.request.y
+
+        # check feasibility
+        future = self.send_ik_request(goal_x, goal_y)
+        await future
+        if not future.result().success:
+            goal_handle.abort()
+            result.success = False
+            result.message = "OUT OF REACH"
+            return result
+
         goal = (goal_x, goal_y)
         trajectory = self._plan_trajectory(goal)
-        for elem in trajectory:
-            self.get_logger().info(str(elem))
+
+        feedback_msg = ExecuteTrajectory.Feedback()
+        for i, waypoint in enumerate(trajectory):
+            # check if goal is cancelled
+            if goal_handle.is_cancel_requested:
+                goal_handle.cancelled()
+                result.success = False
+                return result
+            
+            # --- TODO ---
+            # command arm to waypoint and wait for it to arrive
+            
+            # sending feedback
+            feedback_msg.waypoint_index = i
+            feedback_msg.ee_x = waypoint[0]
+            feedback_msg.ee_y = waypoint[1]
+            self.get_logger().info(f"Waypoint {i}: ({waypoint[0],waypoint[1]})")
+
+        # return result
+        goal_handle.succeed()
+        result.success = True
+        result.theta1 = self.current_theta1
+        result.theta2 = self.current_theta2
+        return result
+            
 
         # self.get_logger().info('EXECUTING GOAL')
         # result = ExecuteTrajectory.Result()
