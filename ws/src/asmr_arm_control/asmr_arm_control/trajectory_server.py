@@ -82,7 +82,11 @@ class TajectoryServer(Node):
         pass
 
 
-    def _plan_trajectory(self, end_pos: tuple[float, float]):
+    def _plan_trajectory(self, end_pos: tuple[float, float]) -> list[tuple[float, float]]:
+        """
+        creates a linear trajectory between the end effector's current position and the desired end position.
+        Returns: Array of interpolated points on trajectory as tuples
+        """
         self.get_logger().info("Entered _plan_trajectory")
         future = self.send_fk_request(self.current_theta1, self.current_theta2)
         rclpy.spin_until_future_complete(self, future)
@@ -91,9 +95,7 @@ class TajectoryServer(Node):
         x_interpolations = np.linspace(current_pos[0], end_pos[0], NO_INTERPOLATIONS)
         y_interpolations = np.linspace(current_pos[1], end_pos[1], NO_INTERPOLATIONS)
         trajectory_array = zip(x_interpolations, y_interpolations)
-        self.get_logger().info("--------------------------------AKSDKFKSJPFJOWEJFWONOFJWOEKFPWJ--------------------------------")
-        for i in trajectory_array:
-            self.get_logger().info(str(i))
+        return trajectory_array
 
 
 
