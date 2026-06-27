@@ -82,14 +82,20 @@ class TajectoryServer(Node):
         pass
 
 
-    def _plan_trajectory(self, end_pos):
+    def _plan_trajectory(self, end_pos: tuple[float, float]):
         self.get_logger().info("Entered _plan_trajectory")
         future = self.send_fk_request(self.current_theta1, self.current_theta2)
         rclpy.spin_until_future_complete(self, future)
         response = future.result()
         current_pos = (response.x, response.y)
+        x_interpolations = np.linspace(current_pos[0], end_pos[0], NO_INTERPOLATIONS)
+        y_interpolations = np.linspace(current_pos[1], end_pos[1], NO_INTERPOLATIONS)
+        trajectory_array = zip(x_interpolations, y_interpolations)
         self.get_logger().info("--------------------------------AKSDKFKSJPFJOWEJFWONOFJWOEKFPWJ--------------------------------")
-        self.get_logger().info(str(current_pos))
+        for i in trajectory_array:
+            self.get_logger().info(str(i))
+
+
 
     def joint_callback(self, msg):
         self.current_theta1 = msg.position[0]
@@ -100,7 +106,7 @@ class TajectoryServer(Node):
 def main(args=None) -> None:
     rclpy.init(args=args)
     server = TajectoryServer('trajectory_server')
-    server._plan_trajectory(0.0)
+    server._plan_trajectory((0.3, 0.3))
     executor = MultiThreadedExecutor()
     executor.add_node(server)
     try:
