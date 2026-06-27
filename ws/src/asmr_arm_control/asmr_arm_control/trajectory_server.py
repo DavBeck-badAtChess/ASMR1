@@ -12,6 +12,7 @@ from rclpy.node import Node
 from rclpy.executors import MultiThreadedExecutor
 
 from asmr_arm_interfaces.action import ExecuteTrajectory
+from sensor_msgs.msg import JointState
 from asmr_arm_interfaces.srv import ComputeFK
 from asmr_arm_interfaces.srv import ComputeIK
 
@@ -28,11 +29,18 @@ bool success     # true if the request was valid
 '''
 
 
+NO_INTERPOLATIONS = 100 
 
-
-class TajectoryServer(Node):    
+class TajectoryServer(Node): 
     def __init__(self, name:str):
         super().__init__(name)
+        # Variables
+        self.fk_req = ComputeFK.Request()
+        self.ik_req = ComputeIK.Request()
+        self.current_theta1 = 0.0
+        self.current_theta2 = 0.0
+
+        # Create service clients
         self._fk_client = self.create_client(
             ComputeFK,
             "forward_kinematics",
@@ -47,8 +55,15 @@ class TajectoryServer(Node):
         while not self._ik_client.wait_for_service(timeout_sec=1.0):
             self.get_logger().info("IK server not available, trying again")
         self.get_logger().info("Successfully connected to FK & IK servers")
-        self.fk_req = ComputeFK.Request()
-        self.ik_req = ComputeIK.Request()
+
+        # Create topic subscriptions
+        self.joint_subscription = self.create_subscription(
+            JointState,
+            'joint_states',
+            self.joint_callback,
+            10
+        )
+        
         
 
         
@@ -67,39 +82,25 @@ class TajectoryServer(Node):
         pass
 
 
+    def _plan_trajectory(self, end_pos):
+        self.get_logger().info("Entered _plan_trajectory")
+        future = self.send_fk_request(self.current_theta1, self.current_theta2)
+        rclpy.spin_until_future_complete(self, future)
+        response = future.result()
+        current_pos = (response.x, response.y)
+        self.get_logger().info("--------------------------------AKSDKFKSJPFJOWEJFWONOFJWOEKFPWJ--------------------------------")
+        self.get_logger().info(str(current_pos))
+
+    def joint_callback(self, msg):
+        self.current_theta1 = msg.position[0]
+        self.current_theta2 = msg.position[1]
+        
+
+
 def main(args=None) -> None:
     rclpy.init(args=args)
     server = TajectoryServer('trajectory_server')
-    future = server.send_fk_request(float(np.pi * 0.5), 0.0)
-    rclpy.spin_until_future_complete(server, future)
-    response = future.result()
-    server.get_logger().info(
-        f"x={response.x} ({type(response.x)}\n)"
-        f"y={response.y} ({type(response.y)}\n)"
-    )
-    future = server.send_fk_request(0.0,0.0)
-    rclpy.spin_until_future_complete(server, future)
-    response = future.result()
-    server.get_logger().info(
-        f"x={response.x} ({type(response.x)}) should be 1-\n"
-        f"y={response.y} ({type(response.y)}) should be 0\n"
-    )
-    future = server.send_ik_request(0.3,0.3)
-    rclpy.spin_until_future_complete(server, future)
-    response = future.result()
-    server.get_logger().info(
-        f"theta1={response.theta1} ({type(response.theta1)})\n"
-        f"theta2={response.theta2} ({type(response.theta2)})\n"
-        f"success={response.success} ({type(response.success)})\n"
-    )
-    future = server.send_ik_request(1.0,0.1)
-    rclpy.spin_until_future_complete(server, future)
-    response = future.result()
-    server.get_logger().info(
-        f"theta1={response.theta1} ({type(response.theta1)})\n"
-        f"theta2={response.theta2} ({type(response.theta2)})\n"
-        f"success={response.success} ({type(response.success)})\n"
-    )
+    server._plan_trajectory(0.0)
     executor = MultiThreadedExecutor()
     executor.add_node(server)
     try:
