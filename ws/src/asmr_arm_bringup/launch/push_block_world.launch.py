@@ -1,10 +1,22 @@
+import os
+
 from launch import LaunchDescription
 from launch_ros.actions import Node
 from launch.actions import ExecuteProcess
 from launch.substitutions import Command, PathJoinSubstitution
 from launch_ros.substitutions import FindPackageShare
 from launch_ros.parameter_descriptions import ParameterValue
-from launch.actions import TimerAction
+
+
+from ament_index_python.packages import get_package_share_directory
+from launch import LaunchDescription
+from launch.actions import IncludeLaunchDescription
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.substitutions import Command, PathJoinSubstitution
+from launch_ros.actions import Node
+from launch_ros.parameter_descriptions import ParameterValue
+from launch_ros.substitutions import FindPackageShare
+
 
 
 def generate_launch_description():
@@ -25,52 +37,56 @@ def generate_launch_description():
     )
 
 
+    gz_sim = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(
+                get_package_share_directory('ros_gz_sim'),
+                'launch', 'gz_sim.launch.py'
+            )
+        ),
+        launch_arguments={'gz_args': [push_block_world_path, ' -r']}.items(),
+    )
+
     return LaunchDescription([
         Node(
-            package='robot_state_publisher',
-            executable='robot_state_publisher',
-            parameters=[{'robot_description': ParameterValue(Command(['xacro ', arm_urdf_path]), value_type=str)}],
+           package='robot_state_publisher',
+           executable='robot_state_publisher',
+           output = "screen",
+           parameters=[{'robot_description': ParameterValue(Command(['xacro ', arm_urdf_path, ' use_sim_control:=true']), value_type=str)}],
         ),
+        gz_sim,
+        
 
-        ExecuteProcess(
-            cmd=['gz', 'sim', '-r', push_block_world_path],
-        ),
 
         Node(
-            package='joint_state_publisher',
-            executable='joint_state_publisher',
-        ),
+    package='controller_manager',
+    executable='spawner',
+    arguments=['joint_state_broadcaster'],
+    output='screen',
+),
 
-        # ExecuteProcess(
-        #     cmd=[
-        #     "ros2", "run", "tf2_ros", "static_transform_publisher",
-        #     "0", "0", "0",
-        #     "0", "0", "0",
-        #     "map", "odom"
-        #     ],
-        #     output="screen"
-        # ),
-        # ExecuteProcess(
-        #     cmd=[
-        #     "ros2", "run", "tf2_ros", "static_transform_publisher",
-        #     "0", "0", "0",
-        #     "0", "0", "0",
-        #     "odom", "base_link"
-        # ],
-        # output="screen"
-        # ),
+        Node(
+    package='controller_manager',
+    executable='spawner',
+    arguments=['arm_pid_controller'],
+    output='screen',
+),
+        
         Node(
             package='asmr_arm_mission',
             executable='push_block_mission',
         ),
+
         Node(
             package='asmr_arm_control',
             executable='kinematics_server',
         ),
+
         Node(
             package='asmr_arm_control',
             executable='trajectory_server',
         ),
+
         Node(
             package='ros_gz_sim',
             executable='create',
@@ -82,14 +98,17 @@ def generate_launch_description():
                 '-y', '0.0',
             ],
         ),
-        # Node(
-        #     package='ros_gz_bridge',
-        #     executable='parameter_bridge',
-        #     parameters=[{'config_file': bridge_config}],
-        # ),
+
         Node(
             package='rviz2',
             executable='rviz2',
-            arguments=['-d', rviz_config],
+            arguments=['-d', rviz_config,
+                       'use_sim_time:=true'],
+        ),
+
+        Node(
+            package='ros_gz_bridge',
+            executable='parameter_bridge',
+            parameters=[{'config_file': bridge_config}],
         ),
     ])
