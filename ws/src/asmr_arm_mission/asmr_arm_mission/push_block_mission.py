@@ -21,27 +21,30 @@ class PushBlockMission(Node):
     def send_bs_request(self, goal_pos: tuple[float, float]):
         self.bs_req.x = goal_pos[0]
         self.bs_req.y = goal_pos[1]
+        self.get_logger().info("about to return send_bs_request")
         return self._bs_client.call_async(self.bs_req)
 
 
 
     def send_goal(self, order: tuple[float, float]):
-        future = self.send_bs_request(order)
-        rclpy.spin_until_future_complete(self, future)
-        x_interpolation = future.result().x_coords
-        y_interpolation = future.result().y_coords
+        # future = self.send_bs_request(order)
+        # rclpy.spin_until_future_complete(self, future)
+        # x_interpolation = future.result().x_coords
+        # y_interpolation = future.result().y_coords
         goal_msg = ExecuteTrajectory.Goal()
-        goal_msg.x = list(x_interpolation)
-        goal_msg.y = list(y_interpolation)
+        goal_msg.x = order[0]
+        goal_msg.y = order[1]
 
-        # self._execute_trajectory_client.send_goal_async(goal_msg)
+        return self._execute_trajectory_client.send_goal_async(goal_msg)
 
 def main(args=None) -> None:
     rclpy.init(args=args)
 
     try:
         node = PushBlockMission()
+        node.get_logger().info("about to send_goal")
         future = node.send_goal((0.2, 0.2))
+        node.get_logger().info("successfully returned from send_goal")
         rclpy.spin_until_future_complete(node, future)
         rclpy.spin(node)
     except (KeyboardInterrupt, ExternalShutdownException):

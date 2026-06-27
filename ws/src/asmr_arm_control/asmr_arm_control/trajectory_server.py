@@ -103,6 +103,7 @@ class TrajectoryServer(Node):
         x_interpolation, y_interpolation = zip(*(self._plan_trajectory((request.x, request.y))))
         response.x_coords = x_interpolation
         response.y_coords = y_interpolation
+        self.get_logger().info("exiting bs_callback")
 
 
     def _plan_trajectory(self, end_pos: tuple[float, float]) -> list[tuple[float, float]]:
@@ -112,16 +113,26 @@ class TrajectoryServer(Node):
         """
         self.get_logger().info("Entered _plan_trajectory")
         future = self.send_fk_request(self.current_theta1, self.current_theta2)
+        self.get_logger().info("request sent")
         rclpy.spin_until_future_complete(self, future)
+        self.get_logger().info("finished spinning")
         response = future.result()
         current_pos = (response.x, response.y)
         x_interpolations = np.linspace(current_pos[0], end_pos[0], NO_INTERPOLATIONS)
         y_interpolations = np.linspace(current_pos[1], end_pos[1], NO_INTERPOLATIONS)
         trajectory_array = list(zip(x_interpolations, y_interpolations))
+        self.get_logger().info("exiting _plan_trajectory")
         return trajectory_array
 
     def execute_trajectory(self, goal_handle):
-        pass
+        self.get_logger().info("hello from execute_trajectory")
+        goal_x = goal_handle.request.x
+        goal_y = goal_handle.request.y
+        goal = (goal_x, goal_y)
+        trajectory = self._plan_trajectory(goal)
+        for elem in trajectory:
+            self.get_logger().info(str(elem))
+
         # self.get_logger().info('EXECUTING GOAL')
         # result = ExecuteTrajectory.Result()
         # return result
