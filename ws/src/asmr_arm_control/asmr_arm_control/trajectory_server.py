@@ -6,6 +6,7 @@ from enum import Enum
 
 
 import rclpy
+from rclpy.action import ActionServer
 import tf2_ros
 import tf2_geometry_msgs  # noqa: F401  (registers transform support for PointStamped)
 from rclpy.node import Node
@@ -15,6 +16,7 @@ from asmr_arm_interfaces.action import ExecuteTrajectory
 from sensor_msgs.msg import JointState
 from asmr_arm_interfaces.srv import ComputeFK
 from asmr_arm_interfaces.srv import ComputeIK
+from asmr_arm_interfaces.srv import BSService
 
 
 ''' FK
@@ -31,7 +33,7 @@ bool success     # true if the request was valid
 
 NO_INTERPOLATIONS = 100 
 
-class TajectoryServer(Node): 
+class TrajectoryServer(Node): 
     def __init__(self, name:str):
         super().__init__(name)
         # Variables
@@ -63,9 +65,21 @@ class TajectoryServer(Node):
             self.joint_callback,
             10
         )
-        
-        
 
+        # Create service
+        self._generate_bs_server = self.create_service(
+            BSService,
+            'bs_service',
+            self.bs_callback
+        )
+
+        # Create action server
+        self._trajectory_server = ActionServer(
+            self,
+            ExecuteTrajectory,
+            'execute_trajectory',
+            self.execute_trajectory
+        )
         
     def send_fk_request(self, theta1, theta2):
         self.fk_req.theta1 = theta1
@@ -81,6 +95,15 @@ class TajectoryServer(Node):
     def _callback(self, request, response):
         pass
 
+    def joint_callback(self, msg):
+        self.current_theta1 = msg.position[0]
+        self.current_theta2 = msg.position[1]
+        
+    def bs_callback(self, request, response):
+        x_interpolation, y_interpolation = zip(*(self._plan_trajectory((request.x, request.y))))
+        response.x_coords = x_interpolation
+        response.y_coords = y_interpolation
+
 
     def _plan_trajectory(self, end_pos: tuple[float, float]) -> list[tuple[float, float]]:
         """
@@ -94,21 +117,21 @@ class TajectoryServer(Node):
         current_pos = (response.x, response.y)
         x_interpolations = np.linspace(current_pos[0], end_pos[0], NO_INTERPOLATIONS)
         y_interpolations = np.linspace(current_pos[1], end_pos[1], NO_INTERPOLATIONS)
-        trajectory_array = zip(x_interpolations, y_interpolations)
+        trajectory_array = list(zip(x_interpolations, y_interpolations))
         return trajectory_array
 
+    def execute_trajectory(self, goal_handle):
+        pass
+        # self.get_logger().info('EXECUTING GOAL')
+        # result = ExecuteTrajectory.Result()
+        # return result
 
-
-    def joint_callback(self, msg):
-        self.current_theta1 = msg.position[0]
-        self.current_theta2 = msg.position[1]
         
 
 
 def main(args=None) -> None:
     rclpy.init(args=args)
-    server = TajectoryServer('trajectory_server')
-    server._plan_trajectory((0.3, 0.3))
+    server = TrajectoryServer('trajectory_server')
     executor = MultiThreadedExecutor()
     executor.add_node(server)
     try:

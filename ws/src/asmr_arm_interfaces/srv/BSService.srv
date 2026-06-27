@@ -1,0 +1,8 @@
+# Request: desired position
+float64 x   # x goal position
+float64 y   # y goal position
+---
+# Response: stream so that i can use ExecuteTrajectory inside push_block_mission and comply with task
+bool valid       # tag whether the position is reachable
+float64[] x      # stream for x coordinates
+float64[] y      # stream for y coordinates
