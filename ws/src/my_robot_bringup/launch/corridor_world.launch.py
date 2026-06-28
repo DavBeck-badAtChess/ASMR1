@@ -15,7 +15,7 @@ def generate_launch_description():
         [FindPackageShare('my_robot_description'), 'urdf', 'my_robot_arm.urdf.xacro']
     )
     world_path = PathJoinSubstitution(
-        [FindPackageShare('my_robot_bringup'), 'worlds', 'wall_world.sdf']
+        [FindPackageShare('my_robot_description'), 'worlds', 'corridor_world.sdf']
     )
     bridge_config = PathJoinSubstitution(
         [FindPackageShare('my_robot_bringup'), 'config', 'bridge.yaml']
@@ -43,7 +43,9 @@ def generate_launch_description():
                 ' use_sim_control:=true',
             ]), value_type=str)}],
         ),
+        
         gz_sim,
+
         Node(
             package='ros_gz_sim',
             executable='create',
@@ -51,16 +53,31 @@ def generate_launch_description():
                 '-topic', 'robot_description',
                 '-name', 'my_robot',
                 '-z', '0.1',
+                '-x', '-0.5',
+                '-y', '0',
+                '-Y', '0.26',
             ],
         ),
+
         Node(
             package='ros_gz_bridge',
             executable='parameter_bridge',
             parameters=[{'config_file': bridge_config}],
         ),
+
         Node(
             package='rviz2',
             executable='rviz2',
             arguments=['-d', rviz_config],
+        ),
+
+        Node(
+            package='asmr_arm_control',
+            executable='kinematics_server',
+        ),
+
+        Node(
+            package='asmr_arm_control',
+            executable='trajectory_server',
         ),
     ])
