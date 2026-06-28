@@ -75,9 +75,7 @@ class KinematicsServer(Node):
             "inverse_kinematics",
             self._compute_inverse_kinematics
         )
-        self.get_logger().info("KinematicsServer::is now running"+30*"=")
-        self.get_logger().info(f"{KinematicsServer.arm_dims}")
-        self.get_logger().info(f"{KinematicsServer.DEBUG}")
+        if self.__class__.DEBUG:self.get_logger().info("KinematicsServer::is now running"+30*"=")
 
 
     def _compute_inverse_kinematics(self, request, response):
