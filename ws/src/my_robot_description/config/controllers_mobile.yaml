@@ -1,0 +1,42 @@
+controller_manager:
+  ros__parameters:
+    update_rate: 500  # Hz
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+    arm_pid_controller:
+      type: pid_controller/PidController
+
+# ---------------------------------------------------------------------------
+# arm_pid_controller -- COMPLETE THIS BLOCK (Task 1).
+# Every value below is left empty for you to fill. The interface fields list
+# their valid options in the comment; the gains are floats you choose and tune.
+# Until the block is complete the controller will not configure and the arm
+# stays limp.
+# ---------------------------------------------------------------------------
+arm_pid_controller:
+  ros__parameters:
+    dof_names:
+      - elbow
+      - shoulder
+    command_interface: effort
+    reference_and_state_interfaces: ["position"]
+    set_current_state_as_first_setpoint: true
+    gains:
+      
+      
+      shoulder:
+        p:                 22.0
+        i:                 0.0
+        d:                 2.0
+        u_clamp_max:       30.0
+        u_clamp_min:       -30.0
+        feedforward_gain:  0.0
+    elbow:
+        p:                 12.0
+        i:                 0.0
+        d:                 1.0
+        u_clamp_max:       30.0
+        u_clamp_min:       -30.0
+        feedforward_gain:  0.0
+      

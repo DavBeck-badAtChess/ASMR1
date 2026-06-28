@@ -7,10 +7,25 @@
   <!-- Suppress the standalone pedestal/world block when arm.urdf.xacro is included here -->
   <xacro:arg name="standalone" default="false"/>
 
+
+  <xacro:arg name="standalone" default="false"/>
+  <xacro:include filename="$(find asmr_arm_description)/urdf/arm.urdf.xacro"/>
+
+  <xacro:if value="$(arg use_sim_control)">
+    <xacro:include filename="$(find asmr_arm_description)/urdf/arm.ros2_control.xacro"/>
+    <xacro:arm_ros2_control
+        controllers_file="$(find my_robot_description)/config/controllers_mobile.yaml"/>
+  </xacro:if>
   <!-- TASK 2(a): include the arm macro (asmr_arm_description/urdf/arm.urdf.xacro),
        mount it on base_link so it faces forward, pass its link lengths (create an
        arm_dimensions.yaml, modelled on the pedestal one), and wire its
        ros2_control (arm.ros2_control.xacro + your controllers_mobile.yaml).
        See "The Arm". -->
+
+  <xacro:property name="arm_dimensions" value="${xacro.load_yaml('$(find my_robot_description)/config/arm_dimensions.yaml)}"/>
+
+  <xacro:asmr_arm parent="base_link" l1="${arm_dimensions['l1']}" l2="${arm_dimensions['l2']}">
+    <origin xyz="0.0 0.0 0.05" rpy="0 0 0"/>
+  </xacro:asmr_arm>
 
 </robot>
