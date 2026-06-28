@@ -8,6 +8,7 @@ find_package(action_msgs REQUIRED)
 rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/ComputeFK.srv"
   "srv/ComputeIK.srv"
+  "srv/BSService.srv"
   "action/ExecuteTrajectory.action"
   DEPENDENCIES action_msgs
 )
