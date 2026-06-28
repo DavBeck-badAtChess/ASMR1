@@ -7,8 +7,6 @@
   <!-- Suppress the standalone pedestal/world block when arm.urdf.xacro is included here -->
   <xacro:arg name="standalone" default="false"/>
 
-
-  <xacro:arg name="standalone" default="false"/>
   <xacro:include filename="$(find asmr_arm_description)/urdf/arm.urdf.xacro"/>
 
   <xacro:if value="$(arg use_sim_control)">
@@ -21,11 +19,12 @@
        arm_dimensions.yaml, modelled on the pedestal one), and wire its
        ros2_control (arm.ros2_control.xacro + your controllers_mobile.yaml).
        See "The Arm". -->
-
-  <xacro:property name="arm_dimensions" value="${xacro.load_yaml('$(find my_robot_description)/config/arm_dimensions.yaml)}"/>
-
-  <xacro:asmr_arm parent="base_link" l1="${arm_dimensions['l1']}" l2="${arm_dimensions['l2']}">
-    <origin xyz="0.0 0.0 0.05" rpy="0 0 0"/>
+  <xacro:arg name="mobile_dimensions_file"
+             default="$(find my_robot_description)/config/arm_dimensions.yaml"/>
+  <xacro:property name="dims_path" value="$(arg mobile_dimensions_file)"/>
+  <xacro:property name="dims" value="${xacro.load_yaml(dims_path)}"/>
+  <xacro:asmr_arm parent="base_link" l1="${dims['l1']}" l2="${dims['l2']}">
+    <origin xyz="0.0 0.0 0.05" rpy="0 0 -1.5708"/>
   </xacro:asmr_arm>
 
 </robot>
