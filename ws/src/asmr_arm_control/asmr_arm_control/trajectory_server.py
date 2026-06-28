@@ -69,7 +69,7 @@ class TrajectoryServer(Node):
             self.get_logger().info("FK server not available, trying again")
         while not self._ik_client.wait_for_service(timeout_sec=1.0):
             self.get_logger().info("IK server not available, trying again")
-        self.get_logger().info("Successfully connected to FK & IK servers")
+        if self.__class__.DEBUG:self.get_logger().info(f"{self.__class__}::Successfully connected to FK & IK servers"+30*"-")
 
         # Create topic subscriptions
         self.joint_subscription = self.create_subscription(
@@ -93,20 +93,24 @@ class TrajectoryServer(Node):
             'execute_trajectory',
             self.execute_trajectory
         )
-        
+        if self.__class__.DEBUG:self.get_logger().info(f"{self.__class__}::now ready "+30*"=")
+
+
     def send_fk_request(self, theta1, theta2):
         self.fk_req.theta1 = theta1
         self.fk_req.theta2 = theta2 
+        if self.__class__.DEBUG:self.get_logger().info(f"{self.__class__}::sending fk request theta1: {theta1}, theta2: {theta2} "+30*"-")
         return self._fk_client.call_async(self.fk_req)
 
 
     def send_ik_request(self, x, y):
         self.ik_req.x = x
         self.ik_req.y = y 
+        if self.__class__.DEBUG:self.get_logger().info(f"{self.__class__}::sending ik request x: {self.ik_req.x}, y: {self.ik_req.y} "+30*"-")
         return self._ik_client.call_async(self.ik_req)
 
-    def _callback(self, request, response):
-        pass
+    # def _callback(self, request, response):
+    #     pass
 
     def joint_callback(self, msg):
         self.current_theta1 = msg.position[0]
@@ -116,7 +120,7 @@ class TrajectoryServer(Node):
         x_interpolation, y_interpolation = zip(*(self._plan_trajectory((request.x, request.y))))
         response.x_coords = x_interpolation
         response.y_coords = y_interpolation
-        self.get_logger().info("exiting bs_callback")
+        if self.__class__.DEBUG:self.get_logger().info(f"{self.__class__}::exiting bs_callback "+30*"-")
 
 
     def _plan_trajectory(self, end_pos: tuple[float, float]) -> list[tuple[float, float]]:
@@ -124,22 +128,24 @@ class TrajectoryServer(Node):
         creates a linear trajectory between the end effector's current position and the desired end position.
         Returns: Array of interpolated points on trajectory as tuples
         """
-        self.get_logger().info("Entered _plan_trajectory")
+        
+        if self.__class__.DEBUG:self.get_logger().info(f"{self.__class__}::Entered _plan_trajectory "+30*"-")
         future = self.send_fk_request(self.current_theta1, self.current_theta2)
-        self.get_logger().info("request sent")
+        #if self.__class__.DEBUG:self.get_logger().info(f"{self.__class__}::Entered _plan_trajectory "+30*"-")
+        #self.get_logger().info("request sent")
         rclpy.spin_until_future_complete(self, future)
-        self.get_logger().info("finished spinning")
+        #self.get_logger().info("finished spinning")
         response = future.result()
         current_pos = (response.x, response.y)
         x_interpolations = np.linspace(current_pos[0], end_pos[0], NO_INTERPOLATIONS)
         y_interpolations = np.linspace(current_pos[1], end_pos[1], NO_INTERPOLATIONS)
         trajectory_array = list(zip(x_interpolations, y_interpolations))
-        self.get_logger().info("exiting _plan_trajectory")
+        if self.__class__.DEBUG:self.get_logger().info(f"{self.__class__}::exiting _plan_trajectory "+30*"-")
         return trajectory_array
 
     async def execute_trajectory(self, goal_handle):
         result = ExecuteTrajectory.Result()
-        self.get_logger().info("hello from execute_trajectory")
+        if self.__class__.DEBUG:self.get_logger().info(f"{self.__class__}::execute_trajectory "+30*"-")
         goal_x = goal_handle.request.x
         goal_y = goal_handle.request.y
 

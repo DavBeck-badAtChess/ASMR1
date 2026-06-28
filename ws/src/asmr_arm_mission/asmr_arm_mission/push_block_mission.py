@@ -34,7 +34,7 @@ class PushBlockMission(Node):
         self.bs_req.x = goal_pos[0]
         self.bs_req.y = goal_pos[1]
         self.get_logger().info("about to return send_bs_request")
-        if self.__class__.DEBUG: self.get_logger().info(f"{self.__class__}::send_bs_request with x: {self.bs_req.x}, y: {self.bs_req.y}")
+        if self.__class__.DEBUG: self.get_logger().info(f"{self.__class__}::send_bs_request with x: {self.bs_req.x}, y: {self.bs_req.y} "+ 10*"-")
         return self._bs_client.call_async(self.bs_req)
 
 
@@ -47,7 +47,7 @@ class PushBlockMission(Node):
         goal_msg = ExecuteTrajectory.Goal()
         goal_msg.x = order[0]
         goal_msg.y = order[1]
-        if self.__class__.DEBUG: self.get_logger().info(f"{self.__class__}::send_goal with x: {goal_msg.x}, y: {goal_msg.y}")
+        if self.__class__.DEBUG: self.get_logger().info(f"{self.__class__}::send_goal with x: {goal_msg.x}, y: {goal_msg.y} "+ 10*"-")
         return self._execute_trajectory_client.send_goal_async(goal_msg)
 
 def main(args=None) -> None:
@@ -55,10 +55,10 @@ def main(args=None) -> None:
 
     try:
         node = PushBlockMission()
-        node.get_logger().info("about to send_goal")
+        if PushBlockMission.DEBUG: node.get_logger().info(f"PushBlockMission::about to send_goal "+ 10*"-")
         future = node.send_goal((0.2, 0.2))
-        node.get_logger().info("successfully returned from send_goal")
         rclpy.spin_until_future_complete(node, future)
+        if PushBlockMission.DEBUG: node.get_logger().info(f"PushBlockMission::successfully returned from send_goal "+ 10*"-")
         rclpy.spin(node)
     except (KeyboardInterrupt, ExternalShutdownException):
         pass

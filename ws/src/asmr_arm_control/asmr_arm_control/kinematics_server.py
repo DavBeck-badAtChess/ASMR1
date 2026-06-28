@@ -75,13 +75,14 @@ class KinematicsServer(Node):
             "inverse_kinematics",
             self._compute_inverse_kinematics
         )
-        if self.__class__.DEBUG:self.get_logger().info("KinematicsServer::is now running"+30*"=")
+        if self.__class__.DEBUG:self.get_logger().info(f"{self.__class__}::is now running"+30*"=")
 
 
-    def _compute_inverse_kinematics(self, request, response):
+    def _compute_inverse_kinematics_dis(self, request, response):
         '''
         use the inverse kinematics from week 6
         '''
+        if self.__class__.DEBUG:self.get_logger().info(f"{self.__class__}::inverse kinematics call cought"+30*"-")
         target = np.array([request.x, request.y])
         if np.linalg.norm(target) > KinematicsServer.robot_arm_lengths[0] + KinematicsServer.robot_arm_lengths[1]:  # Check if target is within workspace
             response.success = False
@@ -99,7 +100,8 @@ class KinematicsServer(Node):
         response.success = True
         return response
 
-    def _compute_inverse_kinematics_alternative(self, request, response):
+    def _compute_inverse_kinematics(self, request, response):
+        if self.__class__.DEBUG:self.get_logger().info(f"{self.__class__}::inverse kinematics call cought"+30*"-")
         x = request.x
         y = request.y
 
@@ -115,6 +117,7 @@ class KinematicsServer(Node):
         return response
 
     def _compute_forward_kinematics(self, request, response):
+        if self.__class__.DEBUG:self.get_logger().info(f"{self.__class__}::forwards kinematics call cought"+30*"-")
         x = self.l1 * np.cos(request.theta1) + self.l2 * np.cos(request.theta1 + request.theta2)
         y = self.l1 * np.sin(request.theta1) + self.l2 * np.sin(request.theta1 + request.theta2)
         response.x = x
@@ -123,10 +126,10 @@ class KinematicsServer(Node):
         return response
 
 
-    def callback(self,request, response):
-        
-        self.get_logger().info('msg recieved')
-        pass
+    # def callback(self,request, response):
+    #     if self.__class__.DEBUG:self.get_logger().info(f"{self.__class__}::forwards kinematics call cought"+30*"-")
+    #     self.get_logger().info('msg recieved')
+    #     pass
 
 
 def main(args=None) -> None:
