@@ -3,6 +3,13 @@ import sys
 sys.dont_write_bytecode = True
 import numpy as np 
 
+import os
+
+from ament_index_python.packages import get_package_share_directory
+import yaml
+
+
+
 import rclpy
 from rclpy.node import Node
 from rclpy.executors import MultiThreadedExecutor
@@ -37,6 +44,18 @@ bool success     # false if the target is outside the workspace
 class KinematicsServer(Node):
     CLOSENESS_TOLERANCE: float  = 0.01
     STEP_SIZE: float  = 0.01
+    DEBUG = False
+    bringup_pkg = get_package_share_directory('asmr_arm_bringup')
+    debug_file = os.path.join(bringup_pkg,'config', 'debug.yaml')
+    with open (debug_file) as f:
+        DEBUG = yaml.safe_load(f)
+    
+
+    desc_pkg = get_package_share_directory('asmr_arm_description')
+    dims_file = os.path.join(desc_pkg,'config', 'arm_dimensions_pedestal.yaml')
+    arm_dims = None
+    with open (dims_file) as f:
+        arm_dims = yaml.safe_load(f)
 
 
     def __init__(self, name:str):
@@ -54,6 +73,9 @@ class KinematicsServer(Node):
             "inverse_kinematics",
             self._compute_inverse_kinematics
         )
+        self.get_logger().info("KinematicsServer::is now running"+30*"=")
+        self.get_logger().info(f"{KinematicsServer.arm_dims}")
+        self.get_logger().info(f"{KinematicsServer.DEBUG}")
 
 
     def _compute_inverse_kinematics(self, request, response):
@@ -89,7 +111,7 @@ class KinematicsServer(Node):
         theta1 = np.arctan2(y, x) - np.arctan2(self.l2 * np.sin(theta2), self.l1 + self.l2 * np.cos(theta2))
         response.theta1 = theta1
         response.theta2 = theta2
-        response.success = True
+        response.success = True 
         return response
 
     def _compute_forward_kinematics(self, request, response):

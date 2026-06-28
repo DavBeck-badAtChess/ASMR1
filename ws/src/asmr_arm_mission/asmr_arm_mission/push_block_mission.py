@@ -17,8 +17,10 @@ class PushBlockMission(Node):
         while not self._bs_client.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('bs_service not avalable, trying again')
         self.bs_req = BSService.Request()
+        self.get_logger().info("PushBlockMission:: now running"+30*"=")
 
     def send_bs_request(self, goal_pos: tuple[float, float]):
+        self.get_logger().info("PushBlockMission::send_bs_request is now running"+30*"=")
         self.bs_req.x = goal_pos[0]
         self.bs_req.y = goal_pos[1]
         self.get_logger().info("about to return send_bs_request")
@@ -54,4 +56,4 @@ def main(args=None) -> None:
     rclpy.shutdown()
 
 if __name__ == '__main__':
-    main()
+    main() 

@@ -68,7 +68,7 @@ class TrajectoryServer(Node):
 
         # Create service
         self._generate_bs_server = self.create_service(
-            BSService,
+            BSService, 
             'bs_service',
             self.bs_callback
         )
