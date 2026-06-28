@@ -1,4 +1,5 @@
 # set the debug flag for extra printouts
-
-debug: True
+mission : True
+kinematics : True
+trajectory : True
 

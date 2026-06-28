@@ -117,7 +117,7 @@ class TrajectoryServer(Node):
     bringup_pkg = get_package_share_directory('asmr_arm_bringup')
     debug_file = os.path.join(bringup_pkg,'config', 'debug.yaml')
     with open (debug_file) as f:
-        DEBUG = yaml.safe_load(f)["debug"]
+        DEBUG = yaml.safe_load(f)["trajectory"]
     #====================================================================================================
 
     def __init__(self, name:str):
@@ -197,16 +197,16 @@ class TrajectoryServer(Node):
         if self.__class__.DEBUG:self.get_logger().info(f"{self.__class__}::_update_current_worldcoord done "+30*"-")
 
 
-    async def _update(self):
+    async def _update(self)-> bool:
         '''
         this will check the current state, and acto accordingly
             - check if there is anything todo
             - if so, 
         '''
         if self.__class__.DEBUG:self.get_logger().info(f"{self.__class__}::ender_update "+30*"<")
-        if not self.active: 
-            if self.__class__.DEBUG:self.get_logger().info(f"{self.__class__}::exiz_update "+30*">")
-            return
+        #if not self.active: 
+        #    if self.__class__.DEBUG:self.get_logger().info(f"{self.__class__}::exiz_update "+30*">")
+        #    return
         if self.__class__.DEBUG:self.get_logger().info(f"{self.__class__}::active "+30*"u")
         await self._update_current_worldcoord()
         if self.__class__.DEBUG:self.get_logger().info(f"{self.__class__}::updated worldcoords "+30*"u")
@@ -233,7 +233,8 @@ class TrajectoryServer(Node):
             result.success = True
             result.theta1 = self.current_theta1
             result.theta2 = self.current_theta2
-            self._current_goal_handle.set_result(result)
+            #self._current_goal_handle.set_result(result)
+            return True
         else:
             curren_goal_worldcoords = self._current_trajectory.next_worldcoord
 
@@ -246,13 +247,15 @@ class TrajectoryServer(Node):
                 result.succeed()
                 result.success = False
                 result.theta1 = self.message = "OUT OF REACH"
-                self._current_goal_handle.set_result(result)
-                
                 self._current_trajectory = None
+                return True
 
-            curren_goal_anglespace = (future.theta1, future.theta1)
+            resp = future.result()
+            if self.__class__.DEBUG:self.get_logger().info(f"{self.__class__}::{resp}"+30*"A")
+            curren_goal_anglespace = (resp.theta1, resp.theta1)
             self._send_muilti_dof_cmd(*curren_goal_anglespace)
         if self.__class__.DEBUG:self.get_logger().info(f"{self.__class__}::exiz_update "+30*">")
+        return False
 
 
     async def execute_trajectory(self, goal_handle):
@@ -263,6 +266,10 @@ class TrajectoryServer(Node):
         goal_y = goal_handle.request.y
         goal = np.array([goal_x,goal_y])
         self._current_trajectory = Trajectory(start_wooldcoord=self._current_worldcoord, goal_wooldcoord=goal)
+        update_compleete = False
+        while not update_compleete:
+            update_compleete = await self._update()
+        return goal_handle
 
 
 

@@ -16,7 +16,7 @@ class PushBlockMission(Node):
     bringup_pkg = get_package_share_directory('asmr_arm_bringup')
     debug_file = os.path.join(bringup_pkg,'config', 'debug.yaml')
     with open (debug_file) as f:
-        DEBUG = yaml.safe_load(f)["debug"]
+        DEBUG = yaml.safe_load(f)["mission"]
     #====================================================================================================
 
     def __init__(self):
@@ -24,8 +24,13 @@ class PushBlockMission(Node):
 
         self._execute_trajectory_client = ActionClient(self, ExecuteTrajectory, 'execute_trajectory')
         self._bs_client = self.create_client(BSService, 'bs_service')
-        while not self._bs_client.wait_for_service(timeout_sec=1.0):
+
+        if not self._bs_client.wait_for_service(timeout_sec=5.0):
             self.get_logger().info('bs_service not avalable, trying again')
+        if not self._execute_trajectory_client.wait_for_server(timeout_sec=5.0):
+            self.get_logger().info('trajectory client not avalable, trying again')
+
+        #while not self._bs_client.wait_for_service(timeout_sec=1.0):
         self.bs_req = BSService.Request()
 
         if self.__class__.DEBUG: self.get_logger().info(f"{self.__class__}:: now running"+30*"=")
@@ -56,7 +61,7 @@ def main(args=None) -> None:
     try:
         node = PushBlockMission()
         if PushBlockMission.DEBUG: node.get_logger().info(f"PushBlockMission::about to send_goal "+ 10*"-")
-        future = node.send_goal((0.2, 0.2))
+        future = node.send_goal((0.5, 0.5))
         rclpy.spin_until_future_complete(node, future)
         if PushBlockMission.DEBUG: node.get_logger().info(f"PushBlockMission::successfully returned from send_goal "+ 10*"-")
         rclpy.spin(node)

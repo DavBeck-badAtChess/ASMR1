@@ -51,7 +51,7 @@ class KinematicsServer(Node):
     bringup_pkg = get_package_share_directory('asmr_arm_bringup')
     debug_file = os.path.join(bringup_pkg,'config', 'debug.yaml')
     with open (debug_file) as f:
-        DEBUG = yaml.safe_load(f)["debug"]
+        DEBUG = yaml.safe_load(f)["kinematics"]
 
     desc_pkg = get_package_share_directory('asmr_arm_description')
     dims_file = os.path.join(desc_pkg,'config', 'arm_dimensions_pedestal.yaml')

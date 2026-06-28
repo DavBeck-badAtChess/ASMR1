@@ -2,7 +2,7 @@ import os
 
 from launch import LaunchDescription
 from launch_ros.actions import Node
-from launch.actions import ExecuteProcess
+from launch.actions import TimerAction
 from launch.substitutions import Command, PathJoinSubstitution
 from launch_ros.substitutions import FindPackageShare
 from launch_ros.parameter_descriptions import ParameterValue
@@ -71,21 +71,7 @@ def generate_launch_description():
     arguments=['arm_pid_controller'],
     output='screen',
 ),
-        
-        Node(
-            package='asmr_arm_mission',
-            executable='push_block_mission',
-        ),
-
-        Node(
-            package='asmr_arm_control',
-            executable='kinematics_server',
-        ),
-
-        Node(
-            package='asmr_arm_control',
-            executable='trajectory_server',
-        ),
+       
 
         Node(
             package='ros_gz_sim',
@@ -110,5 +96,28 @@ def generate_launch_description():
             package='ros_gz_bridge',
             executable='parameter_bridge',
             parameters=[{'config_file': bridge_config}],
+        ),
+
+
+        TimerAction(
+            period=5.0,
+            actions=[
+                Node(
+                package='asmr_arm_mission',
+                executable='push_block_mission',
+            ),
+            ]
+        ),
+    
+        
+
+        Node(
+            package='asmr_arm_control',
+            executable='kinematics_server',
+        ),
+
+        Node(
+            package='asmr_arm_control',
+            executable='trajectory_server',
         ),
     ])
