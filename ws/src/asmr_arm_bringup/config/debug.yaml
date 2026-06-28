@@ -1,5 +1,5 @@
 # set the debug flag for extra printouts
 mission : True
-kinematics : True
+kinematics : False
 trajectory : True
 

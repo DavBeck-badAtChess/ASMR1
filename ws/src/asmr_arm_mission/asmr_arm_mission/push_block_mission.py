@@ -61,9 +61,13 @@ def main(args=None) -> None:
     try:
         node = PushBlockMission()
         if PushBlockMission.DEBUG: node.get_logger().info(f"PushBlockMission::about to send_goal "+ 10*"-")
+        #future = node.send_goal((0.0, 1.0))
+        #future = node.send_goal((0.9, 0.0))
+        #rclpy.spin_until_future_complete(node, future)
+        if PushBlockMission.DEBUG: node.get_logger().info(f"PushBlockMission::successfully returned from send_goal1 "+ 10*"O")
         future = node.send_goal((0.5, 0.5))
         rclpy.spin_until_future_complete(node, future)
-        if PushBlockMission.DEBUG: node.get_logger().info(f"PushBlockMission::successfully returned from send_goal "+ 10*"-")
+        if PushBlockMission.DEBUG: node.get_logger().info(f"PushBlockMission::successfully returned from send_goal2 "+ 10*"0")
         rclpy.spin(node)
     except (KeyboardInterrupt, ExternalShutdownException):
         pass

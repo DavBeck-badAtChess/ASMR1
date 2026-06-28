@@ -62,8 +62,8 @@ class KinematicsServer(Node):
     def __init__(self, name:str):
         super().__init__(name)
         # TODO  REPLACE WITHT HE LOADED STUFF
-        self.l1 = 0.5
-        self.l2 = 0.5
+        self.l1 = KinematicsServer.ARM_DIMENSIONS["l1"]
+        self.l2 = KinematicsServer.ARM_DIMENSIONS["l2"]
         self._fk_service = self.create_service(
             ComputeFK,
             "forward_kinematics",
@@ -109,7 +109,7 @@ class KinematicsServer(Node):
         if abs(d) > 1:
             response.success = False
             return response
-        theta2 = np.arctan2(np.sqrt(1-np.square(d)), d) # always use ellbow up
+        theta2 = np.arctan2(-np.sqrt(1-np.square(d)), d) # always use ellbow up
         theta1 = np.arctan2(y, x) - np.arctan2(self.l2 * np.sin(theta2), self.l1 + self.l2 * np.cos(theta2))
         response.theta1 = theta1
         response.theta2 = theta2
@@ -124,12 +124,6 @@ class KinematicsServer(Node):
         response.y = y
         response.success = True
         return response
-
-
-    # def callback(self,request, response):
-    #     if self.__class__.DEBUG:self.get_logger().info(f"{self.__class__}::forwards kinematics call cought"+30*"-")
-    #     self.get_logger().info('msg recieved')
-    #     pass
 
 
 def main(args=None) -> None:
