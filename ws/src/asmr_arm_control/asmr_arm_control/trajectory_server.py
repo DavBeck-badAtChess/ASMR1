@@ -18,6 +18,11 @@ from asmr_arm_interfaces.srv import ComputeFK
 from asmr_arm_interfaces.srv import ComputeIK
 from asmr_arm_interfaces.srv import BSService
 
+import os
+from ament_index_python.packages import get_package_share_directory
+import yaml
+
+
 
 ''' FK
 # Request: joint angles (radians)
@@ -34,6 +39,14 @@ bool success     # true if the request was valid
 NO_INTERPOLATIONS = 100 
 
 class TrajectoryServer(Node): 
+    DEBUG = False
+    #====================================== get stuff from configs ======================================
+    bringup_pkg = get_package_share_directory('asmr_arm_bringup')
+    debug_file = os.path.join(bringup_pkg,'config', 'debug.yaml')
+    with open (debug_file) as f:
+        DEBUG = yaml.safe_load(f)["debug"]
+    #====================================================================================================
+
     def __init__(self, name:str):
         super().__init__(name)
         # Variables

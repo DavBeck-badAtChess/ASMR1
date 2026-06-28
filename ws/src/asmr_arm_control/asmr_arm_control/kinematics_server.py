@@ -4,7 +4,6 @@ sys.dont_write_bytecode = True
 import numpy as np 
 
 import os
-
 from ament_index_python.packages import get_package_share_directory
 import yaml
 
@@ -45,21 +44,24 @@ class KinematicsServer(Node):
     CLOSENESS_TOLERANCE: float  = 0.01
     STEP_SIZE: float  = 0.01
     DEBUG = False
+    ARM_DIMENSIONS = None
+
+
+    #====================================== get stuff from configs ======================================
     bringup_pkg = get_package_share_directory('asmr_arm_bringup')
     debug_file = os.path.join(bringup_pkg,'config', 'debug.yaml')
     with open (debug_file) as f:
-        DEBUG = yaml.safe_load(f)
-    
+        DEBUG = yaml.safe_load(f)["debug"]
 
     desc_pkg = get_package_share_directory('asmr_arm_description')
     dims_file = os.path.join(desc_pkg,'config', 'arm_dimensions_pedestal.yaml')
-    arm_dims = None
     with open (dims_file) as f:
-        arm_dims = yaml.safe_load(f)
-
+        ARM_DIMENSIONS = yaml.safe_load(f)
+    #====================================================================================================
 
     def __init__(self, name:str):
         super().__init__(name)
+        # TODO  REPLACE WITHT HE LOADED STUFF
         self.l1 = 0.5
         self.l2 = 0.5
         self._fk_service = self.create_service(
