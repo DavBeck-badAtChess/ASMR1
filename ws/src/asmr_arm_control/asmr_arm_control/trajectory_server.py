@@ -175,7 +175,7 @@ class TrajectoryServer(Node):
 
         self._current_worldcoord: np.ndarray = np.array([1,0])
 
-        # Create service clients=========================================================================
+        # Create service clients =========================================================================
         self._fk_client = self.create_client(
             ComputeFK,
             "forward_kinematics",
@@ -184,6 +184,7 @@ class TrajectoryServer(Node):
             ComputeIK,
             "inverse_kinematics",
         )
+
         # Create publisher ===============================================================================
         self._multi_dof_cmd_pub = self.create_publisher(MultiDOFCommand, '/arm_pid_controller/reference', 10)
 
@@ -200,7 +201,6 @@ class TrajectoryServer(Node):
             self.joint_callback,
             10
         )
-
 
         # Create action server ===========================================================================
         self._trajectory_server = ActionServer(
@@ -285,10 +285,6 @@ class TrajectoryServer(Node):
         return result
 
 
-
-
-    
-
     def _send_muilti_dof_cmd(self,theta1:float, theta2:float):
         self.mdof_cmd.values = [theta1, theta2]
         return self._multi_dof_cmd_pub.publish(self.mdof_cmd)
@@ -310,17 +306,6 @@ class TrajectoryServer(Node):
         idx = {name: i for i, name in enumerate(msg.name)}
         self.current_theta1 = msg.position[idx["shoulder"]]
         self.current_theta2 = msg.position[idx["elbow"]]
-
-
-
-
-
-
-
-
-
-
-
 
 
 def main(args=None) -> None:
