@@ -3,6 +3,12 @@ import sys
 sys.dont_write_bytecode = True
 import numpy as np 
 
+import os
+from ament_index_python.packages import get_package_share_directory
+import yaml
+
+
+
 import rclpy
 from rclpy.node import Node
 from rclpy.executors import MultiThreadedExecutor
@@ -37,12 +43,27 @@ bool success     # false if the target is outside the workspace
 class KinematicsServer(Node):
     CLOSENESS_TOLERANCE: float  = 0.01
     STEP_SIZE: float  = 0.01
+    DEBUG = False
+    ARM_DIMENSIONS = None
 
+
+    #====================================== get stuff from configs ======================================
+    bringup_pkg = get_package_share_directory('asmr_arm_bringup')
+    debug_file = os.path.join(bringup_pkg,'config', 'debug.yaml')
+    with open (debug_file) as f:
+        DEBUG = yaml.safe_load(f)["kinematics"]
+
+    desc_pkg = get_package_share_directory('asmr_arm_description')
+    dims_file = os.path.join(desc_pkg,'config', 'arm_dimensions_pedestal.yaml')
+    with open (dims_file) as f:
+        ARM_DIMENSIONS = yaml.safe_load(f)
+    #====================================================================================================
 
     def __init__(self, name:str):
         super().__init__(name)
-        self.l1 = 0.5
-        self.l2 = 0.5
+        # TODO  REPLACE WITHT HE LOADED STUFF
+        self.l1 = KinematicsServer.ARM_DIMENSIONS["l1"]
+        self.l2 = KinematicsServer.ARM_DIMENSIONS["l2"]
         self._fk_service = self.create_service(
             ComputeFK,
             "forward_kinematics",
@@ -54,12 +75,14 @@ class KinematicsServer(Node):
             "inverse_kinematics",
             self._compute_inverse_kinematics
         )
+        if self.__class__.DEBUG:self.get_logger().info(f"{self.__class__}::is now running"+30*"=")
 
 
-    def _compute_inverse_kinematics(self, request, response):
+    def _compute_inverse_kinematics_dis(self, request, response):
         '''
         use the inverse kinematics from week 6
         '''
+        if self.__class__.DEBUG:self.get_logger().info(f"{self.__class__}::inverse kinematics call cought"+30*"-")
         target = np.array([request.x, request.y])
         if np.linalg.norm(target) > KinematicsServer.robot_arm_lengths[0] + KinematicsServer.robot_arm_lengths[1]:  # Check if target is within workspace
             response.success = False
@@ -77,7 +100,8 @@ class KinematicsServer(Node):
         response.success = True
         return response
 
-    def _compute_inverse_kinematics_alternative(self, request, response):
+    def _compute_inverse_kinematics(self, request, response):
+        if self.__class__.DEBUG:self.get_logger().info(f"{self.__class__}::inverse kinematics call cought"+30*"-")
         x = request.x
         y = request.y
 
@@ -85,26 +109,21 @@ class KinematicsServer(Node):
         if abs(d) > 1:
             response.success = False
             return response
-        theta2 = np.arctan2(np.sqrt(1-np.square(d)), d) # always use ellbow up
+        theta2 = np.arctan2(-np.sqrt(1-np.square(d)), d) # always use ellbow up
         theta1 = np.arctan2(y, x) - np.arctan2(self.l2 * np.sin(theta2), self.l1 + self.l2 * np.cos(theta2))
         response.theta1 = theta1
         response.theta2 = theta2
-        response.success = True
+        response.success = True 
         return response
 
     def _compute_forward_kinematics(self, request, response):
+        if self.__class__.DEBUG:self.get_logger().info(f"{self.__class__}::forwards kinematics call cought"+30*"-")
         x = self.l1 * np.cos(request.theta1) + self.l2 * np.cos(request.theta1 + request.theta2)
         y = self.l1 * np.sin(request.theta1) + self.l2 * np.sin(request.theta1 + request.theta2)
         response.x = x
         response.y = y
         response.success = True
         return response
-
-
-    def callback(self,request, response):
-        
-        self.get_logger().info('msg recieved')
-        pass
 
 
 def main(args=None) -> None:
@@ -117,7 +136,7 @@ def main(args=None) -> None:
     except KeyboardInterrupt:
         pass
     server.destroy_node()
-    rclpy.shutdown()
+    #rclpy.shutdown()
 
 if __name__ == '__main__':
     main()

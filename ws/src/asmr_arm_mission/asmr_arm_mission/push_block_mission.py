@@ -1,57 +1,78 @@
 import rclpy
-from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 import numpy as np 
 from asmr_arm_interfaces.action import ExecuteTrajectory
 from rclpy.action import ActionClient
-from asmr_arm_interfaces.srv import BSService
+
+import os
+from ament_index_python.packages import get_package_share_directory
+import yaml
 
 
 class PushBlockMission(Node):
+    DEBUG = False
+    #====================================== get stuff from configs ======================================
+    bringup_pkg = get_package_share_directory('asmr_arm_bringup')
+    debug_file = os.path.join(bringup_pkg,'config', 'debug.yaml')
+    with open (debug_file) as f:
+        DEBUG = yaml.safe_load(f)["mission"]
+    #====================================================================================================
+
+
     def __init__(self):
         super().__init__('push_block_mission')
+        # start -> drive up -> lower -> push -> drive back a bit
+        self._waypoints: list[tuple[int,int]] = [(1,0), (0.3,0.5), (0.3,0.0), (0.9,0.0), (0.3,0.0)]
 
         self._execute_trajectory_client = ActionClient(self, ExecuteTrajectory, 'execute_trajectory')
-
-        self._bs_client = self.create_client(BSService, 'bs_service')
-        while not self._bs_client.wait_for_service(timeout_sec=1.0):
-            self.get_logger().info('bs_service not avalable, trying again')
-        self.bs_req = BSService.Request()
-
-    def send_bs_request(self, goal_pos: tuple[float, float]):
-        self.bs_req.x = goal_pos[0]
-        self.bs_req.y = goal_pos[1]
-        self.get_logger().info("about to return send_bs_request")
-        return self._bs_client.call_async(self.bs_req)
+        if not self._execute_trajectory_client.wait_for_server(timeout_sec=5.0):
+            self.get_logger().info('trajectory client not avalable, trying again')
+        if self.__class__.DEBUG: self.get_logger().info(f"{self.__class__}:: now running"+30*"=")
 
 
-
-    def send_goal(self, order: tuple[float, float]):
-        # future = self.send_bs_request(order)
-        # rclpy.spin_until_future_complete(self, future)
-        # x_interpolation = future.result().x_coords
-        # y_interpolation = future.result().y_coords
+    def execute_mission(self):
+        '''
+        send the mission and listen
+        '''
+        if self.__class__.DEBUG: self.get_logger().info(f"{self.__class__}::mission started o7")
         goal_msg = ExecuteTrajectory.Goal()
-        goal_msg.x = order[0]
-        goal_msg.y = order[1]
+        goal_msg.x = [point[0] for point in self._waypoints]
+        goal_msg.y = [point[1] for point in self._waypoints]
 
-        return self._execute_trajectory_client.send_goal_async(goal_msg)
+        resp = self._execute_trajectory_client.send_goal_async(goal_msg, feedback_callback=self.feedback_callback)
+        resp.add_done_callback(self.goal_response_callback)
+
+
+    def feedback_callback(self, feedback_msg):
+        feedback = feedback_msg.feedback
+        self.get_logger().info(f"now at point: {feedback.waypoint_index}\n eex: {feedback.ee_x:.2f}\n eey: {feedback.ee_y:.2f}\n") 
+
+
+    def goal_response_callback(self, future):
+        goal_handle = future.result()
+        if not goal_handle.accepted:
+            self.get_logger().info("goal not reached ;-;")
+            return
+        self.get_logger().info("goal reached \o/")
+
+        self._get_result_future = goal_handle.get_result_async()
+        self._get_result_future.add_done_callback(self.get_result_callback)
+
+
+    def get_result_callback(self, future):
+        result = future.result().result
+        self.get_logger().info(f"succseed with:\n theta1 {result.theta1} \n theta1 {result.theta2}")
+
+
 
 def main(args=None) -> None:
     rclpy.init(args=args)
 
-    try:
-        node = PushBlockMission()
-        node.get_logger().info("about to send_goal")
-        future = node.send_goal((0.2, 0.2))
-        node.get_logger().info("successfully returned from send_goal")
-        rclpy.spin_until_future_complete(node, future)
-        rclpy.spin(node)
-    except (KeyboardInterrupt, ExternalShutdownException):
-        pass
-    
+    node = PushBlockMission()
+    node.execute_mission()
+    rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()
 
 if __name__ == '__main__':
-    main()
+    main() 

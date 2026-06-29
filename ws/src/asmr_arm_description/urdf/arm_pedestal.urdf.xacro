@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+<robot name="asmr_arm" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- Task 1 robot: a fixed pedestal on a world root with the arm mounted on
+       top. The pedestal is defined here; the arm (geometry + its own
+       ros2_control) is pulled in from arm.urdf.xacro. Link lengths come from
+       the launch (l1/l2 args), the same arm_dimensions_pedestal.yaml that
+       feeds kinematics_server, so geometry and the FK/IK solver agree. -->
+  <xacro:arg name="l1" default="0.5"/>
+  <xacro:arg name="l2" default="0.5"/>
+
+  <!-- fixed pedestal + world root -->
+  <link name="world"/>
+  <link name="pedestal">
+    <visual>
+      <origin xyz="0 0 0.075" rpy="0 0 0"/>
+      <geometry><box size="0.1 0.1 0.15"/></geometry>
+      <material name="dark_grey"><color rgba="0.3 0.3 0.3 1"/></material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0.075" rpy="0 0 0"/>
+      <geometry><box size="0.1 0.1 0.15"/></geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0.075" rpy="0 0 0"/>
+      <mass value="5.0"/>
+      <inertia ixx="0.07" ixy="0" ixz="0" iyy="0.07" iyz="0" izz="0.0083"/>
+    </inertial>
+  </link>
+  <joint name="world_to_pedestal" type="fixed">
+    <parent link="world"/>
+    <child link="pedestal"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+  <gazebo reference="pedestal"><material>Gazebo/Grey</material></gazebo>
+
+  <!-- the arm (geometry + control), mounted on top of the pedestal -->
+  <xacro:include filename="$(find asmr_arm_description)/urdf/arm.urdf.xacro"/>
+  <xacro:asmr_arm parent="pedestal" l1="$(arg l1)" l2="$(arg l2)"
+                  controllers_file="$(find asmr_arm_description)/config/controllers_pedestal.yaml">
+    <origin xyz="0 0 0.15" rpy="0 0 0"/>
+  </xacro:asmr_arm>
+
+</robot>
