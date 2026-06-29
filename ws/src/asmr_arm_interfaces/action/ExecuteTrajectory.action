@@ -1,6 +1,6 @@
 # Goal: sequence of end-effector waypoints in the arm's planar frame (metres)
-float64 x      # reach from the shoulder, per waypoint [m]
-float64 y      # height relative to the shoulder, per waypoint [m]
+float64[] x      # reach from the shoulder, per waypoint [m]
+float64[] y      # height relative to the shoulder, per waypoint [m]
 ---
 # Result
 bool success     # true if every waypoint was reached

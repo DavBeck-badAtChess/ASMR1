@@ -26,8 +26,8 @@ from enum import Enum
 
 ''' TRAJECTORY MISSION
 # Goal: sequence of end-effector waypoints in the arm's planar frame (metres)
-float64 x      # reach from the shoulder, per waypoint [m]
-float64 y      # height relative to the shoulder, per waypoint [m]
+float64[] x      # reach from the shoulder, per waypoint [m]
+float64[] y      # height relative to the shoulder, per waypoint [m]
 ---
 # Result
 bool success     # true if every waypoint was reached
@@ -277,7 +277,7 @@ class TrajectoryServer(Node):
                 mission_state = MISSION_STATE.FAIL
             self._send_muilti_dof_cmd(future.result().theta1,future.result().theta2)
         if self.__class__.DEBUG:self.get_logger().info(f"{self.__class__}::exit_update "+30*">")
-        
+
         return mission_state 
 
 
@@ -314,7 +314,6 @@ class TrajectoryServer(Node):
 
 
 
-
     def _send_muilti_dof_cmd(self,theta1:float, theta2:float):
         self.mdof_cmd.values = [theta1, theta2]
         return self._multi_dof_cmd_pub.publish(self.mdof_cmd)
@@ -323,14 +322,12 @@ class TrajectoryServer(Node):
     def send_fk_request(self, theta1, theta2):
         self.fk_req.theta1 = float(theta1)
         self.fk_req.theta2 = float(theta2)
-        #if self.__class__.DEBUG:self.get_logger().info(f"{self.__class__}::sending fk request theta1: {theta1}, theta2: {theta2} "+30*"-")
         return self._fk_client.call_async(self.fk_req)
 
 
     def send_ik_request(self, x, y):
         self.ik_req.x = float(x)
         self.ik_req.y = float(y)
-        #if self.__class__.DEBUG:self.get_logger().info(f"{self.__class__}::sending ik request x: {self.ik_req.x}, y: {self.ik_req.y} "+30*"-")
         return self._ik_client.call_async(self.ik_req)
 
 
