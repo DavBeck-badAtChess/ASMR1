@@ -4,6 +4,7 @@ import rclpy
 from rclpy.executors import MultiThreadedExecutor
 from geometry_msgs.msg import TwistStamped
 from sensor_msgs.msg import LaserScan
+import math
 
 K_P = 10.0
 K_D = 0.7
@@ -17,6 +18,7 @@ class CorridorMission(Node):
         self.f_right = 0
         self.prev_error = 0
         self.prev_time = self.get_clock().now()
+        self.distance_door = np.infty
 
         self._twist_publisher = self.create_publisher(
             TwistStamped,
@@ -47,38 +49,53 @@ class CorridorMission(Node):
         self._twist_publisher.publish(self.msg)
 
     def left_scan_callback(self, msg):
+        i = len(msg.ranges) // 2
+        # check distance to door
+        if not math.isnan(msg.ranges[i]):
+            self.distance_door =  min(self.distance_door, msg.ranges[i])
+
         self.f_left = np.sum(msg.ranges) / (2 * np.pi /msg.angle_increment)
-        # self.get_logger().info(f"f_left = {self.f_left}")
 
     def right_scan_callback(self, msg):
+        # check distance to door
+        i = len(msg.ranges) // 2
+        if not math.isnan(msg.ranges[i]):
+            self.distance_door =  min(self.distance_door, msg.ranges[i])
+
         self.f_right = np.sum(msg.ranges) / (2 * np.pi /msg.angle_increment)
-        # self.get_logger().info(f"f_right = {self.f_right}")
 
     def pd_controller(self):
+        """
+        moves the robot along the hallway at constant speed SPEED
+        """
         p = self.f_left - self.f_right
-        self.get_logger().info(f"p = {p}")
         current_time = self.get_clock().now() 
         dt = (current_time - self.prev_time).nanoseconds / 1e9
         if (dt <= 0):
             return
         d = (p - self.prev_error) / dt
-        # self.get_logger().info(f"d = {d}")
         angular_z = K_P * p + K_D * d
-        self.get_logger().info(f"angular_z = {angular_z}")
         self.prev_error = p
         self.prev_time = current_time
         self.send_twist(SPEED, angular_z)
 
             
     def timer_callback(self):
-        # msg = TwistStamped()
-        # msg.header.stamp = self.get_clock().now().to_msg()
-        # msg.twist.linear.x = SPEED
-        # msg.twist.angular.z = 0.0
-        
-        # self._twist_publisher.publish(msg)
-        self.pd_controller()
+        """
+        Managing the sequence of actions for the corridor mission:
+            1. move along the corridor and stop in front of door
+        """
+        # move along the corridor and stop in front of door
+        if (self.distance_door > 0.4):
+            self.pd_controller()
+        else:
+            self.send_twist(0.0, 0.0)
 
+        # push door open
+        # TODO
+
+        # enter the room
+        # TODO
 
 def main(args=None):
     rclpy.init(args=args)
