@@ -71,7 +71,7 @@ class Trajectory:
         this also keepes track of where in the trajectory we are.
 
         as a debug i also put in a methode to directly work with the angles (ie pre calculate the angles and use them).
-        in this scenario that is almost (the close enough is not in eukl space) the same as using the world coords, but without 
+        this scenario is almost (the close enough is not in eukl space) the same as using the world coords, but without 
         the annyoing service call delays of the IK and FK. i dont think that is really the intention though so i wont use it.
         '''
         self._completed: bool = False
