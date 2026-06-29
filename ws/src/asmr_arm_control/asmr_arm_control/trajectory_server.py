@@ -8,8 +8,6 @@ import time
 
 import rclpy
 from rclpy.action import ActionServer
-import tf2_ros
-import tf2_geometry_msgs  # noqa: F401  (registers transform support for PointStamped)
 from rclpy.node import Node
 from rclpy.executors import MultiThreadedExecutor
 
@@ -20,27 +18,13 @@ from asmr_arm_interfaces.srv import ComputeFK
 from asmr_arm_interfaces.srv import ComputeIK
 from asmr_arm_interfaces.srv import BSService
 
-
-
 import os
 from ament_index_python.packages import get_package_share_directory
 import yaml
 
-
 from enum import Enum
 
-
-''' FK
-# Request: joint angles (radians)
-float64 theta1   # shoulder joint angle [rad]
-float64 theta2   # elbow joint angle [rad]
----
-# Response: end-effector position in the arm's planar frame (metres)
-float64 x        # reach from the shoulder [m]
-float64 y        # height relative to the shoulder [m]
-bool success     # true if the request was valid
-'''
-'''
+''' TRAJECTORY MISSION
 # Goal: sequence of end-effector waypoints in the arm's planar frame (metres)
 float64 x      # reach from the shoulder, per waypoint [m]
 float64 y      # height relative to the shoulder, per waypoint [m]
@@ -55,24 +39,12 @@ int32 waypoint_index   # index of the waypoint just reached
 float64 ee_x           # achieved end-effector reach [m]
 float64 ee_y           # achieved end-effector height [m]
 '''
-'''
-ros2 topic pub /arm_pid_controller/reference control_msgs/msg/MultiDOFCommand "
-dof_names:
-- elbow
-- shoulder
-values:
-- 2.0
-- 2.0
-values_dot:
-- 0.0
-- 0.0
-"
-'''
 
 
 class Trajectory:
-    CLOSENESS_THREASHOLD:float = 0.15
+    CLOSENESS_THREASHOLD:float = 0.2# if i make this any closer, the arm is not reaching its target...i did try many things to fix this....
     SMOOTHNESS:float = 30.0
+
     @staticmethod
     def _generate_path(start_wooldcoord:np.ndarray, goal_wooldcoord:np.ndarray) -> np.ndarray:
         '''
@@ -200,8 +172,6 @@ class TrajectoryServer(Node):
 
         self._current_worldcoord: np.ndarray = np.array([1,0])
 
-        self._current_goal_handle = None
-
         # Create service clients=========================================================================
         self._fk_client = self.create_client(
             ComputeFK,
@@ -220,7 +190,7 @@ class TrajectoryServer(Node):
             self.get_logger().info("IK server not available, trying again")
         if self.__class__.DEBUG:self.get_logger().info(f"{self.__class__}::Successfully connected to FK & IK servers"+30*"-")
 
-        # Create topic subscriptions
+        # Create topic subscriptions =====================================================================
         self.joint_subscription = self.create_subscription(
             JointState,
             'joint_states',
@@ -228,14 +198,14 @@ class TrajectoryServer(Node):
             10
         )
 
-        # Create service
+        # Create service =================================================================================
         self._generate_bs_server = self.create_service(
             BSService, 
             'bs_service',
             self.bs_callback
         )
 
-        # Create action server
+        # Create action server ===========================================================================
         self._trajectory_server = ActionServer(
             self,
             ExecuteTrajectory,
@@ -365,13 +335,6 @@ class TrajectoryServer(Node):
         idx = {name: i for i, name in enumerate(msg.name)}
         self.current_theta1 = msg.position[idx["shoulder"]]
         self.current_theta2 = msg.position[idx["elbow"]]
-
-
-    def bs_callback(self, request, response):
-        x_interpolation, y_interpolation = zip(*(self._plan_trajectory((request.x, request.y))))
-        response.x_coords = x_interpolation
-        response.y_coords = y_interpolation
-        if self.__class__.DEBUG:self.get_logger().info(f"{self.__class__}::exiting bs_callback "+30*"-")
 
 
 
