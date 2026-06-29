@@ -103,6 +103,7 @@ class Trajectory:
         '''
         return np.linalg.norm(worldcoord-self.next_worldcoord) < Trajectory.CLOSENESS_THREASHOLD
 
+
     def angle_reached(self,angles:np.ndarray)->bool:
         '''
         unused
@@ -118,18 +119,22 @@ class Trajectory:
         '''
         self._current_idx += 1
         self._completed = (self._current_idx == len(self._inbetween))
-    
+
+
     @property
     def mission_complete(self)->bool:
         return self._completed
 
+
     @property
     def current_idx(self)->int:
         return self._current_idx
-    
+
+
     @property
     def next_worldcoord(self)->np.ndarray:
         return self._inbetween[self._current_idx]
+
 
     @property
     def next_angle(self)->np.ndarray:
@@ -138,14 +143,13 @@ class Trajectory:
         '''
         return self._inbetween_angles[self._current_idx]
 
+
 class MISSION_STATE(Enum):
     SUCC = 0
     FAIL = 1
     RUNNING = 2
 
 
-
-NO_INTERPOLATIONS = 100
 class TrajectoryServer(Node): 
     DEBUG = False
     #====================================== get stuff from configs ======================================
@@ -157,14 +161,13 @@ class TrajectoryServer(Node):
 
     def __init__(self, name:str):
         super().__init__(name)
-        # Variables
         self._feedback_msg = ExecuteTrajectory.Feedback()
         self.fk_req = ComputeFK.Request()
         self.ik_req = ComputeIK.Request()
         self.mdof_cmd = MultiDOFCommand()
         self.mdof_cmd.dof_names = ["shoulder", "elbow"]
 
-
+        # Variables
         self.current_theta1:float = 0.0
         self.current_theta2:float = 0.0
         self._current_x:float = 0
@@ -293,7 +296,7 @@ class TrajectoryServer(Node):
 
         ms = MISSION_STATE.RUNNING
         while ms == MISSION_STATE.RUNNING:
-            #time.sleep(0.01) # for dramatic effect :/
+            #time.sleep(0.01) # "for dramatic effect" :1
             ms = await self._update(trajectory, goal_handle)
 
         if self.__class__.DEBUG:self.get_logger().info(f"{self.__class__}::execute_trajectory done!!!!!!!!!! E"+30*"Y")
