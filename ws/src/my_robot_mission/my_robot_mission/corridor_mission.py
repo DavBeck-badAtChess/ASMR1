@@ -6,14 +6,14 @@ from rclpy.executors import MultiThreadedExecutor
 from geometry_msgs.msg import TwistStamped
 from sensor_msgs.msg import LaserScan
 import math
-import enum
+from enum import Enum
 
 
 K_P = 10.0
 K_D = 0.7
 SPEED = 0.2
 
-class MISSION_STATES(enum):
+class MISSION_STATES(Enum):
     '''
     cursed enum:
         the val is there for identety.
@@ -129,7 +129,7 @@ class CorridorMission(Node):
             case MISSION_STATES.OPEN_DOOR:
                 pass#TODO
             case MISSION_STATES.DRIVE_TO_FINISH:
-                
+                pass 
 
         # move along the corridor and stop in front of door
         if (self.distance_door > 0.4):
