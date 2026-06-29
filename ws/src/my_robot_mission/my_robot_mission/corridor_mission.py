@@ -1,3 +1,4 @@
+from __future__ import annotations
 from rclpy.node import Node
 import numpy as np
 import rclpy
@@ -5,10 +6,40 @@ from rclpy.executors import MultiThreadedExecutor
 from geometry_msgs.msg import TwistStamped
 from sensor_msgs.msg import LaserScan
 import math
+import enum
+
 
 K_P = 10.0
 K_D = 0.7
 SPEED = 0.2
+
+class MISSION_STATES(enum):
+    '''
+    cursed enum:
+        the val is there for identety.
+        as faar as i know, the self.value property will be used for comparing etc, but ovverriding self.value is not allowed, so i overload it 
+        store the next state to easily manuver them
+    '''
+    DRIVE_TO_FINISH = (3, None)
+    OPEN_DOOR       = (2, DRIVE_TO_FINISH)
+    DRIVE_TO_DOOR   = (1, OPEN_DOOR)
+    FOLD_IN_ARM     = (0, DRIVE_TO_DOOR)
+    
+    def __int__(self,val:int, next_state:MISSION_STATES):
+        self._value = val
+        self._next_state = next_state
+
+    @property#override
+    def value(self)->int:
+        return self._value
+
+    @property
+    def next(self)->MISSION_STATES:
+        return self._next_state
+
+
+
+
 
 class CorridorMission(Node):
     def __init__(self, name:str):
@@ -19,6 +50,8 @@ class CorridorMission(Node):
         self.prev_error = 0
         self.prev_time = self.get_clock().now()
         self.distance_door = np.infty
+
+        self._mission_state:MISSION_STATES = MISSION_STATES.FOLD_IN_ARM
 
         self._twist_publisher = self.create_publisher(
             TwistStamped,
@@ -38,7 +71,6 @@ class CorridorMission(Node):
             self.right_scan_callback,
             10
         )
-        
         self.timer = self.create_timer(0.1, self.timer_callback)
 
     def send_twist(self, linear_x: float, angular_z: float):
@@ -79,12 +111,26 @@ class CorridorMission(Node):
         self.prev_time = current_time
         self.send_twist(SPEED, angular_z)
 
-            
+
     def timer_callback(self):
         """
         Managing the sequence of actions for the corridor mission:
             1. move along the corridor and stop in front of door
         """
+
+        '''
+        execute whatever is meant to be executed at the current mission state
+        '''
+        match self._mission_state:
+            case MISSION_STATES.FOLD_IN_ARM:
+                pass#TODO
+            case MISSION_STATES.DRIVE_TO_DOOR:
+                pass#TODO
+            case MISSION_STATES.OPEN_DOOR:
+                pass#TODO
+            case MISSION_STATES.DRIVE_TO_FINISH:
+                
+
         # move along the corridor and stop in front of door
         if (self.distance_door > 0.4):
             self.pd_controller()
