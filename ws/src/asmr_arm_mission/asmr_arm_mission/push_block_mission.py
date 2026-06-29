@@ -41,7 +41,7 @@ class PushBlockMission(Node):
 
     def feedback_callback(self, feedback_msg):
         feedback = feedback_msg.feedback
-        self.get_logger().info('Received feedback: {0}'.format(feedback.partial_sequence)) # TODO
+        self.get_logger().info(f"now at point: {feedback.waypoint_index}\n eex: {feedback.ee_x:.2f}\n eey: {feedback.ee_y:.2f}\n") 
 
 
     def goal_response_callback(self, future):
@@ -57,7 +57,7 @@ class PushBlockMission(Node):
 
     def get_result_callback(self, future):
         result = future.result().result
-        #self.get_logger().info(f"Result: {1}")# TODO
+        self.get_logger().info(f"succseed with:\n theta1 {result.theta1} \n theta1 {result.theta2}")
         rclpy.shutdown()
 
 
