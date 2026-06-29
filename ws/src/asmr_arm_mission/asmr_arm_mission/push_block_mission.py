@@ -58,7 +58,6 @@ class PushBlockMission(Node):
     def get_result_callback(self, future):
         result = future.result().result
         self.get_logger().info(f"succseed with:\n theta1 {result.theta1} \n theta1 {result.theta2}")
-        rclpy.shutdown()
 
 
 

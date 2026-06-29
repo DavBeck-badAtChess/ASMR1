@@ -136,7 +136,7 @@ def main(args=None) -> None:
     except KeyboardInterrupt:
         pass
     server.destroy_node()
-    rclpy.shutdown()
+    #rclpy.shutdown()
 
 if __name__ == '__main__':
     main()
