@@ -1,5 +1,4 @@
 import rclpy
-from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 import numpy as np 
 from asmr_arm_interfaces.action import ExecuteTrajectory
@@ -9,6 +8,7 @@ import os
 from ament_index_python.packages import get_package_share_directory
 import yaml
 
+
 class PushBlockMission(Node):
     DEBUG = False
     #====================================== get stuff from configs ======================================
@@ -17,6 +17,7 @@ class PushBlockMission(Node):
     with open (debug_file) as f:
         DEBUG = yaml.safe_load(f)["mission"]
     #====================================================================================================
+
 
     def __init__(self):
         super().__init__('push_block_mission')
@@ -30,6 +31,9 @@ class PushBlockMission(Node):
 
 
     def execute_mission(self):
+        '''
+        send the mission and listen
+        '''
         if self.__class__.DEBUG: self.get_logger().info(f"{self.__class__}::mission started o7")
         goal_msg = ExecuteTrajectory.Goal()
         goal_msg.x = [point[0] for point in self._waypoints]
