@@ -27,6 +27,8 @@ from ament_index_python.packages import get_package_share_directory
 import yaml
 
 
+from enum import Enum
+
 
 ''' FK
 # Request: joint angles (radians)
@@ -69,15 +71,15 @@ values_dot:
 
 
 class Trajectory:
-    CLOSENESS_THREASHOLD:float = 0.2
-    SMOOTHNESS:float = 10.0
+    CLOSENESS_THREASHOLD:float = 0.15
+    SMOOTHNESS:float = 30.0
     @staticmethod
     def _generate_path(start_wooldcoord:np.ndarray, goal_wooldcoord:np.ndarray) -> np.ndarray:
         '''
         the trajectory is just lerp (no fancy checking if the path even robot intersecting or whatever, that will be seen when a coord is acutally driven to)
         the point densety is higher on the start/stop of the traj (i think what i am using is calles cosine distrobution, but i did not look it up to check)
         '''
-        num = max(2,int(np.linalg.norm(start_wooldcoord-goal_wooldcoord)*10))
+        num = max(2,int(np.linalg.norm(start_wooldcoord-goal_wooldcoord)*Trajectory.SMOOTHNESS))
         dir = goal_wooldcoord - start_wooldcoord 
         dist = np.linalg.norm(dir, keepdims=True)
         dir /= dist
@@ -164,6 +166,12 @@ class Trajectory:
         '''
         return self._inbetween_angles[self._current_idx]
 
+class MISSION_STATE(Enum):
+    SUCC = 0
+    FAIL = 1
+    RUNNING = 2
+
+
 
 NO_INTERPOLATIONS = 100
 class TrajectoryServer(Node): 
@@ -248,7 +256,7 @@ class TrajectoryServer(Node):
         if self.__class__.DEBUG:self.get_logger().info(f"{self.__class__}::_update current agnles :{self.current_theta1} :{self.current_theta2}"+30*"-")
 
 
-    async def _update(self, trajectory:Trajectory, goal_handle)-> bool:
+    async def _update(self, trajectory:Trajectory, goal_handle)-> MISSION_STATE:
         '''
             - update the current position
             - check if the current traj point is reached (the first call garantues this, since the first point is the curr pos)
@@ -257,7 +265,7 @@ class TrajectoryServer(Node):
         '''
         if self.__class__.DEBUG:self.get_logger().info(f"{self.__class__}::enter_update "+30*"<")
         waypoint_has_changed:bool = False
-        mission_over:bool = False
+        mission_state:MISSION_STATE = MISSION_STATE.RUNNING
         
         await self._update_current_worldcoord()
         if trajectory.waypoint_reached(self._current_worldcoord):
@@ -278,11 +286,7 @@ class TrajectoryServer(Node):
             if the mission is completed, remove the trajectory, set the goal stuff, return true
             '''
             goal_handle.succeed()
-            result = ExecuteTrajectory.Result()
-            result.success = True
-            result.theta1 = self.current_theta1
-            result.theta2 = self.current_theta2
-            mission_over = True
+            mission_state = MISSION_STATE.SUCC
         elif waypoint_has_changed:
             '''
             get the next waypoint, convert it to thetas, send thetas.
@@ -296,36 +300,45 @@ class TrajectoryServer(Node):
             await future
             if not future.result().success:
                 goal_handle.abort()
-                result = ExecuteTrajectory.Result()
-                result.success = False
-                self.message = "OUT OF REACH"
                 if self.__class__.DEBUG:self.get_logger().info(f"{self.__class__}::_update mission failed"+30*"-")
-                mission_over = True
+                mission_state = MISSION_STATE.FAIL
             self._send_muilti_dof_cmd(future.result().theta1,future.result().theta2)
         if self.__class__.DEBUG:self.get_logger().info(f"{self.__class__}::exit_update "+30*">")
-        return mission_over
+        
+        return mission_state 
 
 
     async def execute_trajectory(self, goal_handle):
         '''
         build the trajectory, and iterate update untill it is compleeted or aborted.
+        depending on the exit, build the result and return it 
         '''
         if self.__class__.DEBUG:self.get_logger().info(f"{self.__class__}::execute_trajectory "+30*"-")
+        
         await self._update_current_worldcoord()
         goal = np.array([goal_handle.request.x,goal_handle.request.y])
         trajectory = Trajectory(start_wooldcoord=self._current_worldcoord, goal_wooldcoord=goal)
+
         if self.__class__.DEBUG:self.get_logger().info(f"{self.__class__}::execute_trajectory curr {trajectory._inbetween}"+30*"-")
-        update_compleete = False
-        while not update_compleete:
-            update_compleete = await self._update(trajectory, goal_handle)
-            time.sleep(0.1) # for dramatic effect :/
+
+        ms = MISSION_STATE.RUNNING
+        while ms == MISSION_STATE.RUNNING:
+            #time.sleep(0.01) # for dramatic effect :/
+            ms = await self._update(trajectory, goal_handle)
+
         if self.__class__.DEBUG:self.get_logger().info(f"{self.__class__}::execute_trajectory done!!!!!!!!!! E"+30*"Y")
+
         result = ExecuteTrajectory.Result()
-        result.success = True
-        result.theta1 = self.current_theta1
-        result.theta2 = self.current_theta2
+        match ms:
+            case MISSION_STATE.SUCC:
+                result.success = True
+                result.theta1 = self.current_theta1
+                result.theta2 = self.current_theta2
+            case MISSION_STATE.FAIL:
+                result.success = False
+                self.message = "OUT OF REACH"
         return result
-        #return goal_handle.Result()
+
 
 
 

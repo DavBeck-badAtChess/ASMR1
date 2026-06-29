@@ -24,16 +24,16 @@ arm_pid_controller:
     set_current_state_as_first_setpoint: true
     gains:      
       shoulder:
-          p:                 24.0
+          p:                 35.0
           i:                 0.0
-          d:                 5.0
+          d:                 0.0
           u_clamp_max:       100.0
           u_clamp_min:       -100.0
           feedforward_gain:  0.0
       elbow:
           p:                 20.0
           i:                 0.0
-          d:                 3.0
+          d:                 0.0
           u_clamp_max:       100.0
           u_clamp_min:       -100.0
           feedforward_gain:  0.0
